@@ -71,4 +71,11 @@ private:
 	bool bIsTransitioning = false;
 	bool bScreenLoaded = false;
 	bool bFadeOutFinished = false;
+
+private:
+	FTimerHandle AutoPlayTimer;      // 자동 재생
+	int32 CurrentIndex = 0;          // 현재 배너 인덱스
+	float DragStartX = 0.f;          // 드래그 시작 X 좌표
+
+	
 };

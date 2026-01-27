@@ -30,7 +30,7 @@ enum class EScreenCoverFinishPolicy : uint8
 UENUM(BlueprintType)
 enum class EUIEventBanner : uint8
 {
-	EVNET  UMETA(DisplayName = "event"),
+	EVNET  UMETA(DisplayName = "EVENT"),
 	PICKUP1 UMETA(DisplayName = "PickUp_1"),
 	PICKUP2 UMETA(DisplayName = "PickUp_2"),
 	END
