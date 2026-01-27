@@ -1,6 +1,50 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
+// Fill out your copyright notice in the Description page of Project Settings.
 
 #include "UI/BABannerWidget.h"
+
+void UBABannerWidget::HandleShortClick()
+{
+	// 여기서 “버튼 처리”를 분리: BP에서 OnBannerClicked 구현하면 됨
+	OnBannerClicked(CurBannerType);
+}
+
+void UBABannerWidget::ApplyDragVisual(float DragOffsetX)
+{
+	// 핵심: "기본 배치 위치" + DragOffset만 적용 (UMG에서 이미 좌/우 배치했다면 추가로 ±W 밀면 사라짐)
+	if (!bBaseTranslationsInitialized)
+	{
+		PrevBaseTranslation = PrevImg ? PrevImg->GetRenderTransform().Translation : FVector2D::ZeroVector;
+		CurrBaseTranslation = CurrImg ? CurrImg->GetRenderTransform().Translation : FVector2D::ZeroVector;
+		NextBaseTranslation = NextImg ? NextImg->GetRenderTransform().Translation : FVector2D::ZeroVector;
+
+		bBaseTranslationsInitialized = true;
+	}
+
+	const FVector2D Drag(DragOffsetX, 0.0f);
+	if (PrevImg) PrevImg->SetRenderTranslation(PrevBaseTranslation + Drag);
+	if (CurrImg) CurrImg->SetRenderTranslation(CurrBaseTranslation + Drag);
+	if (NextImg) NextImg->SetRenderTranslation(NextBaseTranslation + Drag);
+}
+
+void UBABannerWidget::ResetDragVisual()
+{
+	CurrentDragOffsetX = 0.0f;
+
+	// 베이스 위치로 복귀
+	if (bBaseTranslationsInitialized)
+	{
+		if (PrevImg) PrevImg->SetRenderTranslation(PrevBaseTranslation);
+		if (CurrImg) CurrImg->SetRenderTranslation(CurrBaseTranslation);
+		if (NextImg) NextImg->SetRenderTranslation(NextBaseTranslation);
+	}
+	else
+	{
+		// 아직 베이스를 안 잡았으면 일단 0으로
+		if (PrevImg) PrevImg->SetRenderTranslation(FVector2D::ZeroVector);
+		if (CurrImg) CurrImg->SetRenderTranslation(FVector2D::ZeroVector);
+		if (NextImg) NextImg->SetRenderTranslation(FVector2D::ZeroVector);
+	}
+}
 
 void UBABannerWidget::NativeConstruct()
 {
@@ -129,8 +173,59 @@ void UBABannerWidget::NativeDestruct()
     Super::NativeDestruct();
 }
 
+void UBABannerWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
+{
+    Super::NativeTick(MyGeometry, InDeltaTime);
+
+    if (!isLerp)
+        return;
+
+    fAnimElapsed += InDeltaTime;
+    float Alpha = FMath::Clamp(fAnimElapsed / fAnimDuration, 0.f, 1.f);
+
+    float OffsetX = FMath::Lerp(fAnimStartX, fAnimTargetX, Alpha);
+    ApplyDragVisual(OffsetX);
+
+    if (Alpha >= 1.f)
+    {
+        if (SiledState == SILDESTATE::ANIMING)
+        {
+            if(isNext)
+            {
+                if (fAnimStartX > 0)
+                {
+                    // 오른쪽으로 드래그 -> 이전 배너로
+                    SlideToPrev();
+                }
+                else
+                {
+                    // 왼쪽으로 드래그 -> 다음 배너로
+                    SlideToNext();
+                }
+            }
+            
+            SiledState = SILDESTATE::FINAL;
+        }
+        else if (SiledState == SILDESTATE::FINAL)
+        {
+            ApplyDragVisual(0.f);
+            ResetDragVisual();
+
+            fAnimElapsed = 0.f;
+            fAnimTargetX = 0.f;
+            isLerp = false;
+            SiledState = NONE;
+        }  
+    }
+}
+
 FReply UBABannerWidget::NativeOnMouseButtonDown(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent)
 {
+    if (isLerp)
+    {
+        return FReply::Handled(); // 입력 먹고 무시
+    }
+
     // 왼쪽 마우스 버튼만 처리
     if (InMouseEvent.GetEffectingButton() != EKeys::LeftMouseButton)
     {
@@ -140,9 +235,18 @@ FReply UBABannerWidget::NativeOnMouseButtonDown(const FGeometry& InGeometry, con
     // 드래그 시작 위치 저장
     DragStartPosition = InGeometry.AbsoluteToLocal(InMouseEvent.GetScreenSpacePosition());
     bIsDragging = true;
+	bMovedBeyondClickThreshold = false;
+    CurrentDragOffsetX = 0.0f;
+    ResetDragVisual();
 
     // 마우스 캡처 요청 (드래그 중 다른 위젯이 이벤트를 받지 않도록)
-    return FReply::Handled().CaptureMouse(AsShared());
+    TSharedPtr<SWidget> CachedWidget = GetCachedWidget();
+    if (CachedWidget.IsValid())
+    {
+        return FReply::Handled().CaptureMouse(CachedWidget.ToSharedRef());
+    }
+    
+    return FReply::Handled();
 }
 
 FReply UBABannerWidget::NativeOnMouseMove(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent)
@@ -153,8 +257,29 @@ FReply UBABannerWidget::NativeOnMouseMove(const FGeometry& InGeometry, const FPo
         return FReply::Unhandled();
     }
 
-    // 여기서 실시간 피드백을 구현할 수 있습니다 (예: 배너를 약간 이동시키기)
-    // 현재는 드래그 종료 시에만 슬라이드를 실행하도록 구현합니다.
+    if (isLerp)
+    {
+        return FReply::Handled(); // 입력 먹고 무시
+    }
+
+    const FVector2D CurrentPosition = InGeometry.AbsoluteToLocal(InMouseEvent.GetScreenSpacePosition());
+    const FVector2D DragDelta = CurrentPosition - DragStartPosition;
+
+	// 클릭/드래그 판별용 (조금이라도 많이 움직이면 클릭 취급 안 함)
+	if (!bMovedBeyondClickThreshold && DragDelta.SizeSquared() > (ClickMaxDistance * ClickMaxDistance))
+	{
+		bMovedBeyondClickThreshold = true;
+	}
+
+    // 배너 폭(한 장) = 위젯 로컬 폭이라고 가정
+    const float ViewWidth = InGeometry.GetLocalSize().X - fClipingDistance;
+
+    // 너무 과하게 끌리는 걸 방지 (원하면 제거/조절)
+    const float ClampedX = FMath::Clamp(DragDelta.X, -ViewWidth, ViewWidth);
+    CurrentDragOffsetX = ClampedX;
+
+    // 드래그 중 "손에 붙는 느낌"의 핵심: RenderTransform으로 실시간 이동
+    ApplyDragVisual(CurrentDragOffsetX);
 
     return FReply::Handled();
 }
@@ -167,34 +292,37 @@ FReply UBABannerWidget::NativeOnMouseButtonUp(const FGeometry& InGeometry, const
         return FReply::Unhandled();
     }
 
+    const float DragX = CurrentDragOffsetX;
+    isNext = FMath::Abs(DragX) >= MinDragDistance;
+
     if (bIsDragging)
     {
-        // 현재 마우스 위치
-        FVector2D CurrentPosition = InGeometry.AbsoluteToLocal(InMouseEvent.GetScreenSpacePosition());
-        
-        // 드래그 거리 계산
-        FVector2D DragDelta = CurrentPosition - DragStartPosition;
-        float DragDistance = DragDelta.Size();
+		// 짧은 클릭(드래그 거의 없음)은 슬라이드 대신 버튼 처리로 분기
+		if (!bMovedBeyondClickThreshold && !isNext)
+		{
+			HandleShortClick();
+
+            bIsDragging = false;
+            ApplyDragVisual(0.f);
+            ResetDragVisual();
+
+			return FReply::Handled().ReleaseMouseCapture();
+		}
 
         // 최소 거리 이상 드래그했는지 확인
-        if (DragDistance >= MinDragDistance)
+        if (isNext)
         {
-            // 수평 방향으로 충분히 드래그했는지 확인 (세로 드래그는 무시)
-            if (FMath::Abs(DragDelta.X) > FMath::Abs(DragDelta.Y))
-            {
-                if (DragDelta.X > 0)
-                {
-                    // 오른쪽으로 드래그 -> 이전 배너로
-                    SlideToPrev();
-                }
-                else
-                {
-                    // 왼쪽으로 드래그 -> 다음 배너로
-                    SlideToNext();
-                }
-            }
+            const float ViewWidth = InGeometry.GetLocalSize().X;
+            fAnimTargetX = DragX > 0.f ? ViewWidth : -ViewWidth;
+        }
+        else
+        {
+            fAnimTargetX = 0.f;
         }
 
+        SiledState = SILDESTATE::ANIMING;
+        fAnimStartX = DragX;
+        isLerp = true;
         bIsDragging = false;
     }
 
