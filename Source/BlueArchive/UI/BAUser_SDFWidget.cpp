@@ -20,7 +20,6 @@ void UBAUser_SDFWidget::NativePreConstruct()
 {
 	Super::NativePreConstruct();
 
-	UE_LOG(LogTemp, Log, TEXT("UpdateMaterialFromDesigner()"));
 
 	UpdateMaterialFromDesigner();
 }
@@ -29,7 +28,6 @@ void UBAUser_SDFWidget::SynchronizeProperties()
 {
 	Super::SynchronizeProperties();
 
-	UE_LOG(LogTemp, Log, TEXT("SynchronizeProperties()"));
 
 	UpdateMaterialFromDesigner();
 }
