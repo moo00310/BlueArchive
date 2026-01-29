@@ -40,6 +40,9 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, Category = "UI|Fade")
 	TSubclassOf<UBAScreenCoverWidget> BlackWidgetClass;
+
+	UPROPERTY(EditDefaultsOnly, Category = "UI|Trail")
+	TSubclassOf<class UBAMouseTrailWidget> MouseTrailWidgetClass;
 	
 
 private:
@@ -58,6 +61,9 @@ private:
 
 	UPROPERTY()
 	TObjectPtr<UBAScreenCoverWidget> BlackWidget = nullptr;
+
+	UPROPERTY()
+	TObjectPtr<class UBAMouseTrailWidget> MouseTrailWidget = nullptr;
 
 	UPROPERTY()
 	EUIScreen curScreenType = EUIScreen::END;

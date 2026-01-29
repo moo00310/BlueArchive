@@ -19,10 +19,27 @@ void ABAPlayerController::BeginPlay()
 {
 	Super::BeginPlay();
 
+	// 마우스 커서 표시 및 입력 모드 설정 (마우스 트레일을 위해 필요)
+	bShowMouseCursor = true;
+	bEnableClickEvents = true;
+	bEnableMouseOverEvents = true;
+	
+	// 입력 모드를 명확하게 설정
+	FInputModeGameAndUI InputMode;
+	InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+	InputMode.SetHideCursorDuringCapture(false);
+	SetInputMode(InputMode);
+
+	UE_LOG(LogTemp, Log, TEXT("BAPlayerController: 마우스 커서 설정 완료 - ShowCursor: %d"), bShowMouseCursor);
+
 	if (BAUIManager)
 	{
 		BAUIManager->ShowScreen(EUIScreen::MAIN);
 	}
+}
 
+void ABAPlayerController::PlayerTick(float DeltaTime)
+{
+	Super::PlayerTick(DeltaTime);
 
 }

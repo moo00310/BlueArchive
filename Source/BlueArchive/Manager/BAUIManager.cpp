@@ -3,6 +3,7 @@
 
 #include "Manager/BAUIManager.h"
 #include "UI/BAScreenCoverWidget.h"
+#include "UI/BAMouseTrailWidget.h"
 
 
 void UBAUIManager::BeginPlay()
@@ -24,9 +25,29 @@ void UBAUIManager::BeginPlay()
 		BlackWidget->SetVisibility(ESlateVisibility::Hidden);
 	}
 
-	// 델리게이트 등록
+	// ????????? ???
 	MainAnimWidget->OnFadeOutFinished.AddUObject(this, &UBAUIManager::OnFadeOutFinished);
 	BlackWidget->OnFadeOutFinished.AddUObject(this, &UBAUIManager::OnFadeOutFinished);
+
+	// ??? ??? Widget ?? ? ?? Z-Order? ??
+	if (MouseTrailWidgetClass)
+	{
+		UE_LOG(LogTemp, Log, TEXT("BAUIManager: MouseTrailWidgetClass ???: %s"), *MouseTrailWidgetClass->GetName());
+		MouseTrailWidget = CreateWidget<UBAMouseTrailWidget>(OwningPC, MouseTrailWidgetClass);
+		if (MouseTrailWidget)
+		{
+			MouseTrailWidget->AddToViewport(2000); // ?? Z-Order? ?? ?? ??
+			UE_LOG(LogTemp, Log, TEXT("BAUIManager: MouseTrailWidget ?? ?? - Z-Order: 2000"));
+		}
+		else
+		{
+			UE_LOG(LogTemp, Error, TEXT("BAUIManager: MouseTrailWidget ?? ??!"));
+		}
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("BAUIManager: MouseTrailWidgetClass? ???? ?????! BP_UIManager?? WBP_MouseTrail? ??????."));
+	}
 }
 
 void UBAUIManager::ShowScreen_TSubclassOf(EUIScreen ScreenType)
@@ -64,11 +85,11 @@ void UBAUIManager::ShowScreen(EUIScreen ScreenType)
 	EUIScreen PrevScreen = curScreenType;
 	curScreenType = ScreenType;
 
-	PreloadNextScreen();		// 비동기 로딩 시작
+	PreloadNextScreen();
 
 	if (ShouldUseFade(PrevScreen, ScreenType))
 	{
-		UE_LOG(LogTemp, Log, TEXT("Start_Fade_OUT()"));
+		
 
 		MainAnimWidget->SetVisibility(ESlateVisibility::Visible);
 		MainAnimWidget->PlayFadeOut();
@@ -109,16 +130,12 @@ void UBAUIManager::PreloadNextScreen()
 
 void UBAUIManager::OnScreenLoaded()
 {
-	UE_LOG(LogTemp, Log, TEXT("OnScreenLoaded()"));
-
 	bScreenLoaded = true;
 	TrySwitchScreen();
 }
 
 void UBAUIManager::OnFadeOutFinished()
 {
-	UE_LOG(LogTemp, Log, TEXT("OnFadeOutFinished()"));
-
 	bFadeOutFinished = true;
 	TrySwitchScreen();
 }
@@ -143,7 +160,6 @@ void UBAUIManager::TrySwitchScreen()
 		CurrentScreen = nullptr;
 	}
 
-	UE_LOG(LogTemp, Log, TEXT("Make New Screen"));
 
 	// New Screen
 	const TSoftClassPtr<UBAUserWidget>& SoftClass =

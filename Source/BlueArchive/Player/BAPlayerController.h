@@ -20,11 +20,12 @@ public:
 public:
 	UFUNCTION(BlueprintCallable)
 	void RequestShowScreen(EUIScreen ScreenType);
-	
 
 protected:
 	virtual void BeginPlay() override;
+	virtual void PlayerTick(float DeltaTime) override;
 
+protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Manager)
 	TObjectPtr<class UBAUIManager> BAUIManager;
 
