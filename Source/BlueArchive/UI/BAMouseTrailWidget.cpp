@@ -6,37 +6,55 @@
 #include "Components/CanvasPanelSlot.h"
 #include "Components/Image.h"
 #include "Materials/MaterialInstanceDynamic.h"
-#include "Blueprint/WidgetLayoutLibrary.h"
 #include "GameFramework/PlayerController.h"
 
-void UBAMouseTrailWidget::NativeConstruct()
+void UBAMouseTrailWidget::InitializeFX_Implementation(UCanvasPanel* InCanvas)
 {
-	Super::NativeConstruct();
-
-	InitializeSegmentPool(MaxPoolSize);
+	InitializeSegmentPool(InCanvas, MaxPoolSize);
 	bIsInitialized = true;
 
 	PrevMousePos = FVector2D::ZeroVector;
 	CurrentMousePos = FVector2D::ZeroVector;
 	LastSegmentEndPos = FVector2D::ZeroVector;
-
 }
 
-void UBAMouseTrailWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
+void UBAMouseTrailWidget::UpdateFX_Implementation(const FMouseFXFrame& Frame)
 {
-	Super::NativeTick(MyGeometry, InDeltaTime);
+	// 눌렀을 경우
+	if (Frame.bJustPressed)
+	{
+		bTrailActive = true;
 
-	if (!bIsInitialized || !GetOwningPlayer())
-		return;
+		if (Frame.bHasMousePos)
+		{
+			CurrentMousePos = Frame.MousePos;
+			PrevMousePos = CurrentMousePos;
+			LastSegmentEndPos = CurrentMousePos;
+		}
+		else
+		{
+			bTrailActive = false;
+		}
 
-	UpdateMousePosition();
-	UpdateSegments(InDeltaTime);
+	}
+	if (Frame.bJustReleased)
+	{
+		bTrailActive = false;
+		PrevMousePos = FVector2D::ZeroVector;
+		LastSegmentEndPos = FVector2D::ZeroVector;
+	}
+
+	if (bTrailActive && Frame.bDown)
+	{
+		UpdateMousePosition_FromPos(Frame.MousePos);
+	}
+
+	UpdateSegments(Frame.DeltaTime);
 }
 
-void UBAMouseTrailWidget::InitializeSegmentPool(int32 PoolSize)
+void UBAMouseTrailWidget::InitializeSegmentPool(UCanvasPanel* InCanvas, int32 PoolSize)
 {
-	UCanvasPanel* CanvasPanel = Cast<UCanvasPanel>(GetRootWidget());
-	if (!CanvasPanel)
+	if (!InCanvas)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("BAMouseTrailWidget: Root가 CanvasPanel이 아닙니다."));
 		return;
@@ -58,7 +76,7 @@ void UBAMouseTrailWidget::InitializeSegmentPool(int32 PoolSize)
 			Segment.ImageWidget->SetVisibility(ESlateVisibility::Collapsed);
 
 			// Canvas에 붙이기
-			Segment.CanvasSlot = CanvasPanel->AddChildToCanvas(Segment.ImageWidget);
+			Segment.CanvasSlot = InCanvas->AddChildToCanvas(Segment.ImageWidget);
 			if (Segment.CanvasSlot)
 			{
 				// SetSize를 쓸 거면 AutoSize는 끄는 게 안전
@@ -97,27 +115,10 @@ void UBAMouseTrailWidget::InitializeSegmentPool(int32 PoolSize)
 	}
 }
 
-void UBAMouseTrailWidget::UpdateMousePosition()
+void UBAMouseTrailWidget::UpdateMousePosition_FromPos(const FVector2D& Pos)
 {
-	APlayerController* PC = GetOwningPlayer();
-	if (!PC)
-	{
-		static float LastLogTime = 0.f;
-		LastLogTime += GetWorld()->GetDeltaSeconds();
-		if (LastLogTime > 2.f)
-		{
-			UE_LOG(LogTemp, Warning, TEXT("BAMouseTrailWidget: GetOwningPlayer()가 NULL입니다!"));
-			LastLogTime = 0.f;
-		}
-		return;
-	}
-
-	float MouseX = 0.f, MouseY = 0.f;
-	if (!UWidgetLayoutLibrary::GetMousePositionScaledByDPI(PC, MouseX, MouseY))
-		return;
-
 	PrevMousePos = CurrentMousePos;
-	CurrentMousePos = FVector2D(MouseX, MouseY);
+	CurrentMousePos = FVector2D(Pos.X, Pos.Y);
 
 	// 첫 프레임 초기화
 	if (PrevMousePos.IsZero())
@@ -177,7 +178,18 @@ void UBAMouseTrailWidget::ActivateSegment(const FVector2D& StartPos, const FVect
 		return;
 	}
 
-	// 중앙 위치
+	Seg.Length = Length;
+
+	// (중요) 활성 순서/누적 길이 반영
+	ActiveOrder.Add(Index);
+	CurrentTrailLength += Seg.Length;
+
+	while (CurrentTrailLength > MaxTrailLength && ActiveOrder.Num() > 0)
+	{
+		const int32 OldestIndex = ActiveOrder[0];
+		DeactivateSegment(OldestIndex); // 여기서 ActiveOrder/Length 정리까지 모두 처리
+	}
+
 	const FVector2D CenterPos = (StartPos + EndPos) * 0.5f;
 
 	// 슬롯: 크기(Length x Thickness), 위치(좌상단)
@@ -198,7 +210,17 @@ void UBAMouseTrailWidget::DeactivateSegment(int32 Index)
 		return;
 
 	FMouseTrailSegment& Seg = SegmentPool[Index];
-	Seg.bIsActive = false;
+
+	if (Seg.bIsActive)
+	{
+		Seg.bIsActive = false;
+
+		// 누적 길이/순서에서 제거
+		CurrentTrailLength -= Seg.Length;
+		Seg.Length = 0.f;
+
+		ActiveOrder.Remove(Index); // 풀 크기 작으면 O(n)이어도 충분히 OK
+	}
 
 	if (Seg.ImageWidget)
 		Seg.ImageWidget->SetVisibility(ESlateVisibility::Collapsed);

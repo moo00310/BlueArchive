@@ -3,7 +3,7 @@
 
 #include "Manager/BAUIManager.h"
 #include "UI/BAScreenCoverWidget.h"
-#include "UI/BAMouseTrailWidget.h"
+#include "UI/BAMouseFXRootWidget.h"
 
 
 void UBAUIManager::BeginPlay()
@@ -25,28 +25,21 @@ void UBAUIManager::BeginPlay()
 		BlackWidget->SetVisibility(ESlateVisibility::Hidden);
 	}
 
-	// ????????? ???
+
 	MainAnimWidget->OnFadeOutFinished.AddUObject(this, &UBAUIManager::OnFadeOutFinished);
 	BlackWidget->OnFadeOutFinished.AddUObject(this, &UBAUIManager::OnFadeOutFinished);
 
-	// ??? ??? Widget ?? ? ?? Z-Order? ??
-	if (MouseTrailWidgetClass)
+	if (MouseFXRootWidgetClass)
 	{
-		UE_LOG(LogTemp, Log, TEXT("BAUIManager: MouseTrailWidgetClass ???: %s"), *MouseTrailWidgetClass->GetName());
-		MouseTrailWidget = CreateWidget<UBAMouseTrailWidget>(OwningPC, MouseTrailWidgetClass);
-		if (MouseTrailWidget)
+		MouseFXRootWidget = CreateWidget<UBAMouseFXRootWidget>(OwningPC, MouseFXRootWidgetClass);
+		if (MouseFXRootWidget)
 		{
-			MouseTrailWidget->AddToViewport(2000); // ?? Z-Order? ?? ?? ??
-			UE_LOG(LogTemp, Log, TEXT("BAUIManager: MouseTrailWidget ?? ?? - Z-Order: 2000"));
+			MouseFXRootWidget->AddToViewport(2000);
 		}
 		else
 		{
-			UE_LOG(LogTemp, Error, TEXT("BAUIManager: MouseTrailWidget ?? ??!"));
+			UE_LOG(LogTemp, Error, TEXT("BAUIManager: MouseFXRootWidget FAil"));
 		}
-	}
-	else
-	{
-		UE_LOG(LogTemp, Warning, TEXT("BAUIManager: MouseTrailWidgetClass? ???? ?????! BP_UIManager?? WBP_MouseTrail? ??????."));
 	}
 }
 
