@@ -24,3 +24,19 @@ struct FUIAtlasSprite
     UPROPERTY(EditAnywhere, BlueprintReadOnly)
     FVector2D UV_Max;
 };
+
+
+USTRUCT(BlueprintType)
+struct FMouseFXFrame
+{
+    GENERATED_BODY()
+
+    UPROPERTY(BlueprintReadOnly) FVector2D MousePos = FVector2D::ZeroVector;
+    UPROPERTY(BlueprintReadOnly) bool bDown = false;
+    UPROPERTY(BlueprintReadOnly) bool bJustPressed = false;
+    UPROPERTY(BlueprintReadOnly) bool bJustReleased = false;
+    UPROPERTY(BlueprintReadOnly) bool bClick = false;
+    UPROPERTY(BlueprintReadOnly) float DeltaTime = 0.f;
+    UPROPERTY(BlueprintReadOnly) bool bHasMousePos = false;
+
+};

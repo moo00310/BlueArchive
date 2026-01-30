@@ -5,6 +5,8 @@
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
 #include "Components/Image.h"
+#include "UI/BAUserWidget.h"
+#include "Interface/BAMouseFXInterface.h"
 #include "BAMouseTrailWidget.generated.h"
 
 /**
@@ -27,6 +29,7 @@ struct FMouseTrailSegment
 
 	float LifeTime = 0.f;
 	float MaxLifeTime = 0.f;
+	float Length = 0.f;
 };
 
 /**
@@ -34,46 +37,56 @@ struct FMouseTrailSegment
  * 세그먼트 풀링 시스템 사용
  */
 UCLASS()
-class BLUEARCHIVE_API UBAMouseTrailWidget : public UUserWidget
+class BLUEARCHIVE_API UBAMouseTrailWidget : public UBAUserWidget, public IBAMouseFXInterface
 {
 	GENERATED_BODY()
 
 public:
-	virtual void NativeConstruct() override;
-	virtual void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;
+	virtual void InitializeFX_Implementation(UCanvasPanel* InCanvas) override;
+	virtual void UpdateFX_Implementation(const FMouseFXFrame& Frame) override;
 
-	// 세그먼트 풀 초기화
-	void InitializeSegmentPool(int32 PoolSize = 50);
-
-	// 세그먼트 활성화
-	void ActivateSegment(const FVector2D& StartPos, const FVector2D& EndPos, float Thickness = 5.f);
-
-	// 세그먼트 비활성화 (풀로 반환)
-	void DeactivateSegment(int32 Index);
-
+public:
 	// Material 설정
 	UFUNCTION(BlueprintCallable, Category = "Trail")
 	void SetTrailMaterial(class UMaterialInterface* Material);
 
+	UPROPERTY(EditAnywhere, Category = "Trail")
+	float MaxTrailLength = 100.f; // 픽셀 기준
+	float CurrentTrailLength = 0.f;
+
+
+	// “활성화된 순서(오래된->새로운)”를 보관
+	TArray<int32> ActiveOrder;
+
 	// 설정
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Trail|Settings")
-	float SegmentSpacing = 10.f; // 세그먼트 간격
+	float SegmentSpacing = 1.f; // 세그먼트 간격
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Trail|Settings")
 	float SegmentThickness = 5.f; // 세그먼트 두께
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Trail|Settings")
-	float SegmentLifeTime = 1.f; // 세그먼트 수명
+	float SegmentLifeTime = 0.2f; // 세그먼트 수명
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Trail|Settings")
-	int32 MaxPoolSize = 50; // 최대 풀 크기
+	int32 MaxPoolSize = 1000; // 최대 풀 크기
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Trail|Material")
 	TObjectPtr<UMaterialInterface> TrailMaterial;
 
-public:
+
+
+private:
+	// 세그먼트 풀 초기화
+	void InitializeSegmentPool(class UCanvasPanel* InCanvas, int32 PoolSize = 50);
+	// 세그먼트 활성화
+	void ActivateSegment(const FVector2D& StartPos, const FVector2D& EndPos, float Thickness = 5.f);
+	// 세그먼트 비활성화 (풀로 반환)
+	void DeactivateSegment(int32 Index);
+
+private:
 	// 마우스 위치 업데이트
-	void UpdateMousePosition();
+	void UpdateMousePosition_FromPos(const FVector2D& Pos);
 
 	// 세그먼트 업데이트
 	void UpdateSegments(float DeltaTime);
@@ -82,6 +95,7 @@ public:
 	void UpdateSegmentMaterial(int32 Index, const FVector2D& StartPos, const FVector2D& EndPos, float Thickness, float Alpha);
 
 	int32 GetInactiveSegmentIndex() const;
+
 
 private:
 	UPROPERTY()
@@ -92,8 +106,6 @@ private:
 	FVector2D LastSegmentEndPos = FVector2D::ZeroVector;
 
 	bool bIsInitialized = false;
-
 	bool bTrailActive = false;
-	bool bPrevDown = false;
 
 };
