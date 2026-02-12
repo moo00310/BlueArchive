@@ -6,6 +6,8 @@
 #include "Components/Image.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Engine/Texture2D.h"
+#include "SubSystem/BAResourceSubsystem.h"
+#include "Engine/GameInstance.h"
 
 void UBAMouseTouchFXWidget::InitializeFX_Implementation(UCanvasPanel* InCanvas)
 {
@@ -18,6 +20,15 @@ void UBAMouseTouchFXWidget::UpdateFX_Implementation(const FMouseFXFrame& Frame)
 	if (Frame.bJustPressed && Frame.bHasMousePos)
 	{
 		ActivateEffect(Frame.MousePos);
+
+		// 테스트용: 클릭할 때마다 크레딧 1000 추가
+		if (UGameInstance* GameInstance = GetGameInstance())
+		{
+			if (UBAResourceSubsystem* ResourceSubsystem = GameInstance->GetSubsystem<UBAResourceSubsystem>())
+			{
+				ResourceSubsystem->AddCredit(1000);
+			}
+		}
 	}
 
 	UpdateEffects(Frame.DeltaTime);

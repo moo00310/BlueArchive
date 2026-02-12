@@ -23,6 +23,11 @@ public:
 public:
 	UFUNCTION(BlueprintCallable)
 	void SetHalfSize(float InValue);
+	UFUNCTION(BlueprintCallable)
+	void SetTintStrength(float TintStrength);
+	UFUNCTION(BlueprintCallable)
+	void SetColorAdd(FLinearColor vColor);
+
 	void UpdateMaterialFromDesigner();
 
 public:
