@@ -32,12 +32,43 @@ void UBAUser_SDFWidget::SynchronizeProperties()
 	UpdateMaterialFromDesigner();
 }
 
-void UBAUser_SDFWidget::SetHalfSize(float InValue)
+void UBAUser_SDFWidget::SetHalfSize(float HalfSizeXPx)
 {
-	if (!MID)
+	if (!SDF_Image)
 		return;
 
-	MID->SetScalarParameterValue(TEXT("HalfSizePx"), InValue);
+	if (!MID)
+		MID = SDF_Image->GetDynamicMaterial();
+
+	MID->SetScalarParameterValue(TEXT("HalfSizePx"), HalfSizeXPx);
+}
+
+void UBAUser_SDFWidget::SetTintStrength(float TintStrength)
+{
+	if (!SDF_Image)
+		return;
+
+	if (!MID)
+		MID = SDF_Image->GetDynamicMaterial();
+
+	MID->SetScalarParameterValue(
+		TEXT("TintStrength"),
+		TintStrength
+	);
+}
+
+void UBAUser_SDFWidget::SetColorAdd(FLinearColor vColor)
+{
+	if (!SDF_Image)
+		return;
+
+	if (!MID)
+		MID = SDF_Image->GetDynamicMaterial();
+
+	MID->SetVectorParameterValue(
+		TEXT("AddColor"),
+		vColor
+	);
 }
 
 void UBAUser_SDFWidget::UpdateMaterialFromDesigner()
@@ -45,8 +76,10 @@ void UBAUser_SDFWidget::UpdateMaterialFromDesigner()
 	if (!SDF_Image)
 		return;
 
-	UMaterialInstanceDynamic* LocalMID = SDF_Image->GetDynamicMaterial();
-	if (!LocalMID)
+	if (!MID)
+		MID = SDF_Image->GetDynamicMaterial();
+
+	if (!MID)
 		return;
 
 	FVector2D Size(100.f, 50.f); // ±âº»°ª
@@ -58,17 +91,17 @@ void UBAUser_SDFWidget::UpdateMaterialFromDesigner()
 
 	//const float HalfSizePx = Size.X * 0.5f;
 
-	LocalMID->SetScalarParameterValue(
+	MID->SetScalarParameterValue(
 		TEXT("HalfSizePx"),
 		HalfSizePx
 	);
 
-	LocalMID->SetScalarParameterValue(
+	MID->SetScalarParameterValue(
 		TEXT("TintStrength"),
 		fTintStrength
 	);
 
-	LocalMID->SetVectorParameterValue(
+	MID->SetVectorParameterValue(
 		TEXT("AddColor"),
 		vAddColor
 	);

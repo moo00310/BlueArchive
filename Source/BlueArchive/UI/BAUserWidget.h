@@ -24,6 +24,19 @@ public:
 		return CachedPC;
 	}
 
+	/**
+	 * ResourceSubsystem 가져오기 (편의 함수)
+	 */
+	template<typename T>
+	T* GetSubsystem() const
+	{
+		if (UGameInstance* GameInstance = GetGameInstance())
+		{
+			return GameInstance->GetSubsystem<T>();
+		}
+		return nullptr;
+	}
+
 public:
 	void PlayInAnim();
 
