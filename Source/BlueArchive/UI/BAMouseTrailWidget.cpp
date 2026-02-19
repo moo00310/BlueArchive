@@ -94,7 +94,6 @@ void UBAMouseTrailWidget::InitializeSegmentPool(UCanvasPanel* InCanvas, int32 Po
 				if (Segment.MID)
 				{
 					Segment.ImageWidget->SetBrushFromMaterial(Segment.MID);
-					UE_LOG(LogTemp, VeryVerbose, TEXT("BAMouseTrailWidget: Segment %d에 Material 할당 완료"), i);
 				}
 				else
 				{

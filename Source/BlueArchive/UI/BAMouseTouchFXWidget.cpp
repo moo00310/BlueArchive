@@ -26,7 +26,7 @@ void UBAMouseTouchFXWidget::UpdateFX_Implementation(const FMouseFXFrame& Frame)
 		{
 			if (UBAResourceSubsystem* ResourceSubsystem = GameInstance->GetSubsystem<UBAResourceSubsystem>())
 			{
-				ResourceSubsystem->AddCredit(1000);
+				ResourceSubsystem->AddResource(EResourceType::Credit, 200);
 			}
 		}
 	}

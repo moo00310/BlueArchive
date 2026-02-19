@@ -30,8 +30,6 @@ void ABAPlayerController::BeginPlay()
 	InputMode.SetHideCursorDuringCapture(false);
 	SetInputMode(InputMode);
 
-	UE_LOG(LogTemp, Log, TEXT("BAPlayerController: 마우스 커서 설정 완료 - ShowCursor: %d"), bShowMouseCursor);
-
 	if (BAUIManager)
 	{
 		BAUIManager->ShowScreen(EUIScreen::MAIN);

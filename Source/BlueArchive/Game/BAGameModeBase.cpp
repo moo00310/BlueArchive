@@ -11,7 +11,7 @@ ABAGameModeBase::ABAGameModeBase()
 	
 	// PlayerControllerClass = ABAPlayerController::StaticClass();
 
-	static ConstructorHelpers::FClassFinder<ABAPlayerController> PlayterControllerClassRef(TEXT("/Script/Engine.Blueprint'/Game/BP/BP_PlayerController.BP_PlayerController_C'"));
+	static ConstructorHelpers::FClassFinder<ABAPlayerController> PlayterControllerClassRef(TEXT("/Script/Engine.Blueprint'/Game/BP/Game/BP_PlayerController.BP_PlayerController_C'"));
 
 	if (PlayterControllerClassRef.Class)
 	{
