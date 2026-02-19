@@ -10,67 +10,128 @@ void UBASDFValueLabelWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
 
-	// GameInstance에서 ResourceSubsystem 가져오기
 	if (UGameInstance* GameInstance = GetGameInstance())
 	{
 		ResourceSubsystem = GameInstance->GetSubsystem<UBAResourceSubsystem>();
-		
 		if (ResourceSubsystem)
 		{
-			// 리소스 변경 이벤트 구독
 			ResourceSubsystem->OnResourceChanged.AddDynamic(this, &UBASDFValueLabelWidget::OnResourceChanged);
-			
-			// 초기값 설정
-			UpdateDisplay(ResourceSubsystem->GetResource(ResourceType));
+			if (ResourceType == EResourceType::UserInfo)
+			{
+				ResourceSubsystem->OnUserLevelChanged.AddDynamic(this, &UBASDFValueLabelWidget::OnUserLevelChanged);
+				ResourceSubsystem->OnUserNameChanged.AddDynamic(this, &UBASDFValueLabelWidget::OnUserNameChanged);
+			}
+			UpdateDisplay();
 		}
 	}
 }
 
 void UBASDFValueLabelWidget::NativeDestruct()
 {
-	// 델리게이트 구독 해제
 	if (ResourceSubsystem)
 	{
 		ResourceSubsystem->OnResourceChanged.RemoveDynamic(this, &UBASDFValueLabelWidget::OnResourceChanged);
+		ResourceSubsystem->OnUserLevelChanged.RemoveDynamic(this, &UBASDFValueLabelWidget::OnUserLevelChanged);
+		ResourceSubsystem->OnUserNameChanged.RemoveDynamic(this, &UBASDFValueLabelWidget::OnUserNameChanged);
 		ResourceSubsystem = nullptr;
 	}
-
 	Super::NativeDestruct();
 }
 
 void UBASDFValueLabelWidget::OnResourceChanged(EResourceType ChangedResourceType, int32 NewValue)
 {
-	// 설정된 리소스 타입과 일치할 때만 업데이트
-	if (ChangedResourceType == ResourceType)
+	if (ResourceType == EResourceType::UserInfo) return;
+	if (ChangedResourceType == ResourceType) { UpdateDisplay(); return; }
+	// 에너지 라벨은 Current/Max 둘 다 변경 시 갱신
+	if (ResourceType == EResourceType::Energy &&
+		(ChangedResourceType == EResourceType::Energy || ChangedResourceType == EResourceType::MaxEnergy))
 	{
-		UpdateDisplay(NewValue);
+		UpdateDisplay();
 	}
 }
 
-void UBASDFValueLabelWidget::UpdateDisplay(int32 Value)
+void UBASDFValueLabelWidget::OnUserLevelChanged(int32 NewLevel)
 {
-	if (ValueTextBlock)
+	if (ResourceType == EResourceType::UserInfo)
 	{
-		// 숫자를 포맷팅하여 표시 (예: 1,000,000)
-		FText FormattedText = FText::AsNumber(Value);
-		ValueTextBlock->SetText(FormattedText);
+		UpdateDisplay();
 	}
+}
+
+void UBASDFValueLabelWidget::OnUserNameChanged(const FString& NewName)
+{
+	if (ResourceType == EResourceType::UserInfo)
+	{
+		UpdateDisplay();
+	}
+}
+
+void UBASDFValueLabelWidget::UpdateDisplay()
+{
+	if (!ValueTextBlock || !ResourceSubsystem)
+	{
+		return;
+	}
+
+	FText FormattedText;
+
+	switch (ResourceType)
+	{
+	case EResourceType::Credit:
+	case EResourceType::Gem:
+	case EResourceType::MaxEnergy:
+		// 크레딧, 유료재화: 100,000 형식
+		FormattedText = FText::AsNumber(ResourceSubsystem->GetResource(ResourceType));
+		break;
+	case EResourceType::Energy:
+		// 에너지: N/Max 형식
+		FormattedText = FText::FromString(FString::Printf(TEXT("%d / %d"),
+			ResourceSubsystem->GetResource(EResourceType::Energy),
+			ResourceSubsystem->GetResource(EResourceType::MaxEnergy)));
+		break;
+	case EResourceType::UserInfo:
+		// 유저 정보: "Level / Name"
+		FormattedText = FText::FromString(FString::Printf(TEXT("%d  %s"),
+			ResourceSubsystem->GetUserLevel(), *ResourceSubsystem->GetUserName()));
+		break;
+	default:
+		FormattedText = FText::AsNumber(ResourceSubsystem->GetResource(ResourceType));
+		break;
+	}
+
+	ValueTextBlock->SetText(FormattedText);
 }
 
 void UBASDFValueLabelWidget::SetResourceType(EResourceType NewResourceType)
 {
-	ResourceType = NewResourceType;
-	
-	// 새로운 리소스 타입의 현재 값으로 업데이트
-	if (ResourceSubsystem)
+	if (!ResourceSubsystem) return;
+
+	// 기존 타입이 UserInfo였으면 유저 이벤트 구독 해제
+	if (ResourceType == EResourceType::UserInfo)
 	{
-		UpdateDisplay(ResourceSubsystem->GetResource(ResourceType));
+		ResourceSubsystem->OnUserLevelChanged.RemoveDynamic(this, &UBASDFValueLabelWidget::OnUserLevelChanged);
+		ResourceSubsystem->OnUserNameChanged.RemoveDynamic(this, &UBASDFValueLabelWidget::OnUserNameChanged);
 	}
+
+	ResourceType = NewResourceType;
+
+	// 새 타입이 UserInfo면 유저 이벤트 구독
+	if (ResourceType == EResourceType::UserInfo)
+	{
+		ResourceSubsystem->OnUserLevelChanged.AddDynamic(this, &UBASDFValueLabelWidget::OnUserLevelChanged);
+		ResourceSubsystem->OnUserNameChanged.AddDynamic(this, &UBASDFValueLabelWidget::OnUserNameChanged);
+	}
+
+	UpdateDisplay();
 }
 
 void UBASDFValueLabelWidget::SetValue(int32 Value)
 {
-	UpdateDisplay(Value);
+	// 수동 설정 시 숫자만 표시 (타입 포맷 없음)
+	if (ValueTextBlock)
+	{
+		ValueTextBlock->SetText(FText::AsNumber(Value));
+	}
 }
 
 void UBASDFValueLabelWidget::SetTextOffsetX(float OffsetX)

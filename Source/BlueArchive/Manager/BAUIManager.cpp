@@ -38,7 +38,7 @@ void UBAUIManager::BeginPlay()
 		}
 		else
 		{
-			UE_LOG(LogTemp, Error, TEXT("BAUIManager: MouseFXRootWidget FAil"));
+			UE_LOG(LogTemp, Error, TEXT("BAUIManager: MouseFXRootWidget Fail"));
 		}
 	}
 }

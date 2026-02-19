@@ -12,8 +12,7 @@ class UBAResourceSubsystem;
 
 /**
  * SDF 스타일의 값을 표시하는 위젯
- * 크레딧, 골드, 유료재화 등 리소스 값을 표시하는데 사용
- * 리소스 타입을 설정하면 해당 리소스의 변경을 자동으로 감지하여 표시
+ * 크레딧(100,000), 에너지(N/Max), 유저(Level / Name) 등 타입별 포맷 지원
  */
 UCLASS()
 class BLUEARCHIVE_API UBASDFValueLabelWidget : public UBAUserWidget
@@ -25,12 +24,15 @@ protected:
 	virtual void NativeDestruct() override;
 
 private:
-	// 리소스 변경 이벤트 핸들러
 	UFUNCTION()
-	void OnResourceChanged(EResourceType ResourceType, int32 NewValue);
+	void OnResourceChanged(EResourceType ChangedResourceType, int32 NewValue);
+	UFUNCTION()
+	void OnUserLevelChanged(int32 NewLevel);
+	UFUNCTION()
+	void OnUserNameChanged(const FString& NewName);
 
-	// 값 표시 업데이트
-	void UpdateDisplay(int32 Value);
+	/** 서브시스템 기준으로 타입에 맞게 텍스트 갱신 */
+	void UpdateDisplay();
 
 private:
 	// 리소스 서브시스템 참조
@@ -42,7 +44,7 @@ protected:
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UTextBlock> ValueTextBlock;
 
-	// 표시할 리소스 타입 (블루프린트에서 설정)
+	/** 표시할 리소스 타입 (블루프린트에서 설정) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ValueLabel")
 	EResourceType ResourceType = EResourceType::Credit;
 
