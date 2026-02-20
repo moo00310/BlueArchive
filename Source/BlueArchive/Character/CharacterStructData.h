@@ -64,8 +64,5 @@ struct FOwnedCharacter
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     int32 Star = 1;
 
-    // 선택: 강화, 장비, 스킬 레벨 등
-    // UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    // int32 WeaponLevel = 1;
 };
 

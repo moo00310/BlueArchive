@@ -4,6 +4,7 @@
 #include "Save/BAResourceSaveGame.h"
 #include "Data/BAResourceDataAsset.h"
 #include "Game/BAGameInstance.h"
+#include "Game/BAGameDataAsset.h"
 #include "Kismet/GameplayStatics.h"
 #include "Misc/Paths.h"
 #include "TimerManager.h"
@@ -12,27 +13,34 @@ void UBAResourceSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
     Super::Initialize(Collection);
 
-    // GameInstance에서 Data Asset 참조 가져오기 (Init() 순서에 의존하지 않음)
+    // GameData 에셋에서 기본 리소스 에셋 참조 가져오기
     if (UBAGameInstance* BAGI = Cast<UBAGameInstance>(GetGameInstance()))
     {
-        if (!BAGI->DefaultResourceDataAsset.IsNull())
+        if (UBAGameDataAsset* GameData = BAGI->GameData)
         {
-            if (!BAGI->DefaultResourceDataAsset.IsValid())
+            if (!GameData->DefaultResourceDataAsset.IsNull())
             {
-                BAGI->DefaultResourceDataAsset.LoadSynchronous();
-            }
-            if (BAGI->DefaultResourceDataAsset.IsValid())
-            {
-                SetDefaultResourceDataAsset(BAGI->DefaultResourceDataAsset.Get());
+                if (!GameData->DefaultResourceDataAsset.IsValid())
+                {
+                    GameData->DefaultResourceDataAsset.LoadSynchronous();
+                }
+                if (GameData->DefaultResourceDataAsset.IsValid())
+                {
+                    SetDefaultResourceDataAsset(GameData->DefaultResourceDataAsset.Get());
+                }
+                else
+                {
+                    UE_LOG(LogTemp, Warning, TEXT("BAResourceSubsystem: DefaultResourceDataAsset 로드 실패"));
+                }
             }
             else
             {
-                UE_LOG(LogTemp, Warning, TEXT("BAResourceSubsystem: DefaultResourceDataAsset 로드 실패"));
+                UE_LOG(LogTemp, Warning, TEXT("BAResourceSubsystem: GameData에 DefaultResourceDataAsset 미설정"));
             }
         }
         else
         {
-            UE_LOG(LogTemp, Warning, TEXT("BAResourceSubsystem: DefaultResourceDataAsset 미설정"));
+            UE_LOG(LogTemp, Warning, TEXT("BAResourceSubsystem: GameInstance에 GameData 에셋 미할당"));
         }
     }
     else

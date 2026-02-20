@@ -82,8 +82,6 @@ void UBAUIManager::ShowScreen(EUIScreen ScreenType)
 
 	if (ShouldUseFade(PrevScreen, ScreenType))
 	{
-		
-
 		MainAnimWidget->SetVisibility(ESlateVisibility::Visible);
 		MainAnimWidget->PlayFadeOut();
 	}

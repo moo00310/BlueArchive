@@ -8,9 +8,12 @@
 #include "Engine/DataTable.h"
 #include "BACharacterDataSubsystem.generated.h"
 
+class UBACharacterSaveGame;
+
 /**
- * 캐릭터 정적 데이터를 관리하는 서브시스템
- * DataTable에서 캐릭터 정보(이름, 공격력, 방어력 등)를 로드하고 제공
+ * 캐릭터 데이터를 관리하는 서브시스템
+ * - 정적 데이터: DataTable에서 캐릭터 정보(이름, 공격력, 방어력 등)를 로드하고 제공
+ * - 동적 데이터: 보유 캐릭터(레벨, 경험치, 성급 등)를 SaveGame에 저장/로드
  */
 UCLASS()
 class BLUEARCHIVE_API UBACharacterDataSubsystem : public UGameInstanceSubsystem
@@ -19,6 +22,15 @@ class BLUEARCHIVE_API UBACharacterDataSubsystem : public UGameInstanceSubsystem
 
 public:
     virtual void Initialize(FSubsystemCollectionBase& Collection) override;
+    virtual void Deinitialize() override;
+
+    /**
+     * 전역 헬퍼: World Context에서 서브시스템 가져오기
+     * @param WorldContextObject World Context (Actor, Widget, World 등)
+     * @return 서브시스템 포인터 (없으면 nullptr)
+     */
+    UFUNCTION(BlueprintCallable, Category = "Character|Data", meta = (WorldContext = "WorldContextObject"))
+    static UBACharacterDataSubsystem* Get(const UObject* WorldContextObject);
 
     /**
      * 캐릭터 정의 데이터 가져오기 (정적 데이터)
@@ -66,6 +78,55 @@ public:
     UFUNCTION(BlueprintCallable, Category = "Character|Data")
     bool IsDataTableLoaded() const { return CharacterDataTable != nullptr; }
 
+    /** 런타임에 캐릭터 DataTable 설정 (GameData 등에서 호출) */
+    UFUNCTION(BlueprintCallable, Category = "Character|Data")
+    void SetCharacterDataTable(UDataTable* InTable);
+
+    // ====== 보유 캐릭터 관리 (동적 데이터) ======
+    
+    /** 보유 캐릭터 조회 */
+    UFUNCTION(BlueprintCallable, Category = "Character|Owned")
+    bool GetOwnedCharacter(FName CharacterId, FOwnedCharacter& OutCharacter) const;
+
+    /** 보유 캐릭터 추가 (없으면 추가, 있으면 업데이트) */
+    UFUNCTION(BlueprintCallable, Category = "Character|Owned")
+    void AddOrUpdateOwnedCharacter(const FOwnedCharacter& Character);
+
+    /**
+     * 캐릭터 ID만으로 보유 추가 (레벨1/성급1 기본). 블루프린트·테스트용.
+     * DataTable RowName을 넘기면 해당 캐릭터가 보유 목록에 들어가고 UI에 표시됨.
+     */
+    UFUNCTION(BlueprintCallable, Category = "Character|Owned", meta = (DisplayName = "Add Owned Character By Id"))
+    void AddOwnedCharacterById(FName CharacterId, int32 Level = 1, int32 Star = 1);
+
+    /** 보유 캐릭터 레벨 업데이트 */
+    UFUNCTION(BlueprintCallable, Category = "Character|Owned")
+    void SetOwnedCharacterLevel(FName CharacterId, int32 NewLevel);
+
+    /** 보유 캐릭터 경험치 업데이트 */
+    UFUNCTION(BlueprintCallable, Category = "Character|Owned")
+    void SetOwnedCharacterExp(FName CharacterId, int32 NewExp);
+
+    /** 보유 캐릭터 성급 업데이트 */
+    UFUNCTION(BlueprintCallable, Category = "Character|Owned")
+    void SetOwnedCharacterStar(FName CharacterId, int32 NewStar);
+
+    /** 보유한 모든 캐릭터 ID 목록 */
+    UFUNCTION(BlueprintCallable, Category = "Character|Owned")
+    TArray<FName> GetAllOwnedCharacterIds() const;
+
+    /** 캐릭터를 보유하고 있는지 확인 */
+    UFUNCTION(BlueprintCallable, Category = "Character|Owned")
+    bool HasOwnedCharacter(FName CharacterId) const;
+
+    /** 보유 캐릭터 저장 (즉시 저장) */
+    UFUNCTION(BlueprintCallable, Category = "Character|Owned")
+    void SaveNow();
+
+    /** 현재 사용 중인 슬롯 이름 */
+    UFUNCTION(BlueprintCallable, Category = "Character|Owned")
+    FString GetSaveSlotName() const { return SlotName; }
+
 protected:
     /**
      * 캐릭터 데이터 DataTable (블루프린트에서 할당)
@@ -78,4 +139,17 @@ private:
      * DataTable에서 캐릭터 데이터 찾기
      */
     const FCharacterRow* FindCharacterRow(FName CharacterId) const;
+
+    // ====== 보유 캐릭터 저장/로드 ======
+    void LoadOrCreate();
+    void MarkDirty();
+
+    UPROPERTY()
+    TObjectPtr<UBACharacterSaveGame> SaveData;
+
+    FString SlotName = TEXT("BA_CharacterSlot");
+    int32 UserIndex = 0;
+
+    bool bDirty = false;
+    FTimerHandle SaveDebounceTimer;
 };
