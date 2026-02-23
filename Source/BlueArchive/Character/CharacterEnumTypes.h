@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -25,3 +25,11 @@ enum class EDefenseType : uint8
 	END      UMETA(Hidden)
 };
 
+UENUM(BlueprintType)
+enum class EPosRoleType : uint8
+{
+	FRONT UMETA(DisplayName = "Front"),
+	MIDDLE UMETA(DisplayName = "Middle"),
+	BACK UMETA(DisplayName = "Back"),
+	END      UMETA(Hidden)
+};

@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "UI/BAUser_SDFWidget.h"
@@ -82,7 +82,7 @@ void UBAUser_SDFWidget::UpdateMaterialFromDesigner()
 	if (!MID)
 		return;
 
-	FVector2D Size(100.f, 50.f); // ±âº»°ª
+	FVector2D Size(100.f, 50.f); // ï¿½âº»ï¿½ï¿½
 
 	if (UCanvasPanelSlot* CanvasSlot = Cast<UCanvasPanelSlot>(SDF_Image->Slot))
 	{

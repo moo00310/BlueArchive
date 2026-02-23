@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -9,6 +9,7 @@
 #include "BACharacterDataSubsystem.generated.h"
 
 class UBACharacterSaveGame;
+class UBAPartySaveGame;
 
 /**
  * 캐릭터 데이터를 관리하는 서브시스템
@@ -127,6 +128,21 @@ public:
     UFUNCTION(BlueprintCallable, Category = "Character|Owned")
     FString GetSaveSlotName() const { return SlotName; }
 
+    // ====== 파티 관리 (프리셋 4개, 각 3명) ======
+
+    /** 저장할 파티 프리셋 개수 */
+    static constexpr int32 MaxPartyPresets = 4;
+    /** 프리셋당 캐릭터 수 */
+    static constexpr int32 MaxMembersPerParty = 3;
+
+    /** 지정한 프리셋의 캐릭터 ID 배열 (3명, 빈 슬롯은 NAME_None). PresetIndex 0~3 */
+    UFUNCTION(BlueprintCallable, Category = "Character|Party")
+    TArray<FName> GetPartyPreset(int32 PresetIndex) const;
+
+    /** 지정한 프리셋 저장 (최대 3명만 저장, 즉시 저장). PresetIndex 0~3 */
+    UFUNCTION(BlueprintCallable, Category = "Character|Party")
+    void SetPartyPreset(int32 PresetIndex, const TArray<FName>& CharacterIds);
+
 protected:
     /**
      * 캐릭터 데이터 DataTable (블루프린트에서 할당)
@@ -152,4 +168,13 @@ private:
 
     bool bDirty = false;
     FTimerHandle SaveDebounceTimer;
+
+    // ====== 파티 저장/로드 ======
+    void LoadPartyOrCreate();
+    void SavePartyNow();
+
+    UPROPERTY()
+    TObjectPtr<UBAPartySaveGame> PartySaveData;
+
+    FString PartySlotName = TEXT("BA_PartySlot");
 };

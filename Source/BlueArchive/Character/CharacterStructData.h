@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -27,8 +27,8 @@ struct FCharacterRow : public FTableRowBase
 {
     GENERATED_BODY()
 
-    // º¸ÅëÀº RowName ÀÚÃ¼¸¦ ID·Î ¾²´Ï±î, ±»ÀÌ CharacterId ÇÊµå´Â ¾ø¾îµµ µÊ.
-    // ³Ö°í ½ÍÀ¸¸é À¯ÁöÇØµµ µÇÁö¸¸, RowName°ú Áßº¹ °ü¸®°¡ »ý±è.
+    // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ RowName ï¿½ï¿½Ã¼ï¿½ï¿½ IDï¿½ï¿½ ï¿½ï¿½ï¿½Ï±ï¿½, ï¿½ï¿½ï¿½ï¿½ CharacterId ï¿½Êµï¿½ï¿½ ï¿½ï¿½ï¿½îµµ ï¿½ï¿½.
+    // ï¿½Ö°ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Øµï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½, RowNameï¿½ï¿½ ï¿½ßºï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½.
     UPROPERTY(EditAnywhere, BlueprintReadOnly)
     FText DisplayName;
 
@@ -39,9 +39,13 @@ struct FCharacterRow : public FTableRowBase
     EDefenseType DefenseType;
 
     UPROPERTY(EditAnywhere, BlueprintReadOnly)
+
+    EPosRoleType PositionType;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly)
     FBaseStats Base;
 
-    // ³ªÁß¿¡ ÇÊ¿äÇÏ¸é Soft ¸®¼Ò½º Ãß°¡
+    // ï¿½ï¿½ï¿½ß¿ï¿½ ï¿½Ê¿ï¿½ï¿½Ï¸ï¿½ Soft ï¿½ï¿½ï¿½Ò½ï¿½ ï¿½ß°ï¿½
     // UPROPERTY(EditAnywhere, BlueprintReadOnly)
     // TSoftObjectPtr<UTexture2D> Portrait;
 };
@@ -51,7 +55,7 @@ struct FOwnedCharacter
 {
     GENERATED_BODY()
 
-    // DefinitionÀ» °¡¸®Å°´Â Å°(RowName)
+    // Definitionï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½Å°ï¿½ï¿½ Å°(RowName)
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     FName CharacterId = NAME_None;
 

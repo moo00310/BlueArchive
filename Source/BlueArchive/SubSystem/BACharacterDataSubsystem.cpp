@@ -3,6 +3,7 @@
 #include "SubSystem/BACharacterDataSubsystem.h"
 #include "Character/CharacterStructData.h"
 #include "Save/BACharacterSaveGame.h"
+#include "Save/BAPartySaveGame.h"
 #include "Kismet/GameplayStatics.h"
 #include "Misc/Paths.h"
 #include "TimerManager.h"
@@ -13,9 +14,9 @@ void UBACharacterDataSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
     Super::Initialize(Collection);
     // CharacterDataTable은 GameInstance::Init()에서 GameData->Init() 경로로 SetCharacterDataTable() 호출 시 설정됨
-    
-    LoadOrCreate();
 
+    LoadOrCreate();
+    LoadPartyOrCreate();
 }
 
 void UBACharacterDataSubsystem::Deinitialize()
@@ -24,6 +25,8 @@ void UBACharacterDataSubsystem::Deinitialize()
     {
         SaveNow();
     }
+
+    SavePartyNow();
 
     Super::Deinitialize();
 }
@@ -128,7 +131,6 @@ void UBACharacterDataSubsystem::LoadOrCreate()
         
         if (SaveData)
         {
-            UE_LOG(LogTemp, Log, TEXT("BACharacterDataSubsystem: LoadGame"));
             bDirty = false;
             return;
         }
@@ -143,8 +145,10 @@ void UBACharacterDataSubsystem::LoadOrCreate()
         return;
     }
 
-    AddOwnedCharacterById(FName(TEXT("CHR_0001")), 99, 99);
-    UE_LOG(LogTemp, Log, TEXT("BACharacterDataSubsystem: TempCharacter"));
+    //AddOwnedCharacterById(FName(TEXT("CHR_0001")), 01, 01);
+    //AddOwnedCharacterById(FName(TEXT("CHR_0002")), 02, 02);
+    //AddOwnedCharacterById(FName(TEXT("CHR_0003")), 03, 03);
+
     UGameplayStatics::SaveGameToSlot(SaveData, SlotName, UserIndex);
     bDirty = false;
 }
@@ -261,4 +265,80 @@ void UBACharacterDataSubsystem::MarkDirty()
         1.0f,
         false
     );
+}
+
+// ====== 파티 저장/로드 ======
+
+void UBACharacterDataSubsystem::LoadPartyOrCreate()
+{
+    // 데이터가 존재하는지 확인
+    if (UGameplayStatics::DoesSaveGameExist(PartySlotName, UserIndex))
+    {
+        PartySaveData = Cast<UBAPartySaveGame>(UGameplayStatics::LoadGameFromSlot(PartySlotName, UserIndex));
+        if (PartySaveData)
+        {
+            while (PartySaveData->PartyPresets.Num() < MaxPartyPresets)
+            {
+                PartySaveData->PartyPresets.Add(FPartyPreset());
+            }
+            return;
+        }
+    }
+
+    // 데이터 생성
+    PartySaveData = Cast<UBAPartySaveGame>(UGameplayStatics::CreateSaveGameObject(UBAPartySaveGame::StaticClass()));
+    if (PartySaveData)
+    {
+        PartySaveData->PartyPresets.SetNum(MaxPartyPresets);
+        // 프리셋별로 다른 테스트 데이터 (전환 시 구분되도록)
+        PartySaveData->PartyPresets[0].CharacterIds = { NAME_None, NAME_None, NAME_None };
+        PartySaveData->PartyPresets[1].CharacterIds = { NAME_None, NAME_None, NAME_None };
+        PartySaveData->PartyPresets[2].CharacterIds = { NAME_None, NAME_None, NAME_None };
+        PartySaveData->PartyPresets[3].CharacterIds = { NAME_None, NAME_None, NAME_None };
+        UGameplayStatics::SaveGameToSlot(PartySaveData, PartySlotName, UserIndex);
+    }
+}
+
+TArray<FName> UBACharacterDataSubsystem::GetPartyPreset(int32 PresetIndex) const
+{
+    TArray<FName> Result;
+    if (!PartySaveData || PresetIndex < 0 || PresetIndex >= MaxPartyPresets)
+    {
+        return Result;
+    }
+    if (PresetIndex < PartySaveData->PartyPresets.Num())
+    {
+        Result = PartySaveData->PartyPresets[PresetIndex].CharacterIds;
+    }
+    if (Result.Num() > MaxMembersPerParty)
+    {
+        Result.SetNum(MaxMembersPerParty);
+    }
+    while (Result.Num() < MaxMembersPerParty)
+    {
+        Result.Add(NAME_None);
+    }
+    return Result;
+}
+
+void UBACharacterDataSubsystem::SetPartyPreset(int32 PresetIndex, const TArray<FName>& CharacterIds)
+{
+    if (!PartySaveData || PresetIndex < 0 || PresetIndex >= MaxPartyPresets) return;
+
+    while (PartySaveData->PartyPresets.Num() <= PresetIndex)
+    {
+        PartySaveData->PartyPresets.Add(FPartyPreset());
+    }
+    PartySaveData->PartyPresets[PresetIndex].CharacterIds.Empty();
+    for (int32 i = 0; i < FMath::Min(CharacterIds.Num(), MaxMembersPerParty); ++i)
+    {
+        PartySaveData->PartyPresets[PresetIndex].CharacterIds.Add(CharacterIds[i]);
+    }
+    SavePartyNow();
+}
+
+void UBACharacterDataSubsystem::SavePartyNow()
+{
+    if (!PartySaveData) return;
+    UGameplayStatics::SaveGameToSlot(PartySaveData, PartySlotName, UserIndex);
 }

@@ -1,0 +1,80 @@
+// Fill out your copyright notice in the Description page of Project Settings.
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "UI/BAUserWidget.h"
+#include "BAPartySelectWidget.generated.h"
+
+class UPanelWidget;
+class UBACharacterDataSubsystem;
+class UBAUser_SDF_DecoWidget;
+class UBAUserWidgetRadio;
+
+UCLASS()
+class BLUEARCHIVE_API UBAPartySelectWidget : public UBAUserWidget
+{
+	GENERATED_BODY()
+
+public:
+	static constexpr int32 MaxPartyPresets = 4;
+	static constexpr int32 MaxMembersPerParty = 3;
+
+	UFUNCTION(BlueprintPure, Category = "Party")
+	static int32 GetMaxPartyPresets() { return MaxPartyPresets; }
+	UFUNCTION(BlueprintPure, Category = "Party")
+	static int32 GetMaxMembersPerParty() { return MaxMembersPerParty; }
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Party")
+	TArray<FName> DisplayPartyIds;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Party")
+	int32 CurrentPresetIndex = 0;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Party")
+	int32 SelectedSlotIndex = -1;
+
+	UFUNCTION(BlueprintCallable, Category = "Party")
+	void LoadPartyFromSubsystem();
+	UFUNCTION(BlueprintCallable, Category = "Party")
+	void SavePartyToSubsystem();
+	UFUNCTION(BlueprintCallable, Category = "Party")
+	void SwitchPreset(int32 PresetIndex);
+
+	UFUNCTION(BlueprintCallable, Category = "Party")
+	void SetSlotCharacter(int32 SlotIndex, FName CharacterId);
+	UFUNCTION(BlueprintCallable, Category = "Party", meta = (DisplayName = "Select Character For Current Slot"))
+	void SelectCharacterForCurrentSlot(FName CharacterId);
+	UFUNCTION(BlueprintCallable, Category = "Party")
+	void ClearSlot(int32 SlotIndex);
+	UFUNCTION(BlueprintCallable, Category = "Party")
+	void RefreshPartySlots();
+
+private:
+	UFUNCTION()
+	void HandlePresetSelectionChanged(int32 NewIndex);
+	UFUNCTION()
+	void HandleSlotClicked(int32 SlotIndex);
+
+	UFUNCTION(BlueprintCallable, Category = "Party|Window")
+	UUserWidget* ShowWindow(TSubclassOf<UUserWidget> WindowClass);
+	UFUNCTION(BlueprintCallable, Category = "Party|Window")
+	void CloseWindow();
+	UFUNCTION(BlueprintPure, Category = "Party|Window")
+	UUserWidget* GetCurrentWindow() const { return CurrentWindow; }
+
+protected:
+	void NativeConstruct() override;
+
+	UPROPERTY(meta = (BindWidgetOptional))
+	TObjectPtr<UBAUserWidgetRadio> Radio_PresetSelector;
+	UPROPERTY(meta = (BindWidgetOptional))
+	TObjectPtr<UBAUser_SDF_DecoWidget> PartySlot_0;
+	UPROPERTY(meta = (BindWidgetOptional))
+	TObjectPtr<UBAUser_SDF_DecoWidget> PartySlot_1;
+	UPROPERTY(meta = (BindWidgetOptional))
+	TObjectPtr<UBAUser_SDF_DecoWidget> PartySlot_2;
+	UPROPERTY(meta = (BindWidgetOptional))
+	TObjectPtr<UPanelWidget> WindowLayer;
+
+	UPROPERTY()
+	TObjectPtr<UUserWidget> CurrentWindow = nullptr;
+};
