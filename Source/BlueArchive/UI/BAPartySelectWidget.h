@@ -48,6 +48,15 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Party")
 	void RefreshPartySlots();
 
+	/** 슬롯 클릭 시 뜨는 캐릭터 선택 팝업 열기 (Visibility) */
+	UFUNCTION(BlueprintCallable, Category = "Party|Window")
+	void OpenSlotPopup();
+	/** 캐릭터 선택 팝업 닫기 (Visibility) */
+	UFUNCTION(BlueprintCallable, Category = "Party|Window")
+	void CloseSlotPopup();
+	UFUNCTION(BlueprintPure, Category = "Party|Window")
+	bool IsSlotPopupOpen() const { return bSlotPopupOpen; }
+
 private:
 	UFUNCTION()
 	void HandlePresetSelectionChanged(int32 NewIndex);
@@ -75,6 +84,13 @@ protected:
 	UPROPERTY(meta = (BindWidgetOptional))
 	TObjectPtr<UPanelWidget> WindowLayer;
 
+	/** WindowLayer 안에 넣어둔 캐릭터 선택 팝업 (Visibility로 표시/숨김) */
+	UPROPERTY(meta = (BindWidgetOptional))
+	TObjectPtr<UUserWidget> CharacterSelectPopup;
+
 	UPROPERTY()
 	TObjectPtr<UUserWidget> CurrentWindow = nullptr;
+	UPROPERTY()
+	bool bSlotPopupOpen = false;
+
 };

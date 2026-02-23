@@ -12,4 +12,5 @@ void UBAGameInstance::Init()
 	{
 		GameData->Init(this);
 	}
+
 }

@@ -3,9 +3,11 @@
 #include "UI/BAPartySelectWidget.h"
 #include "UI/BAUser_SDF_DecoWidget.h"
 #include "UI/BAUserWidgetRadio.h"
+#include "UI/BASelectPopUpWidget.h"
 #include "SubSystem/BACharacterDataSubsystem.h"
 #include "Components/PanelWidget.h"
 #include "Blueprint/UserWidget.h"
+#include "Components/Widget.h"
 
 void UBAPartySelectWidget::NativeConstruct()
 {
@@ -33,6 +35,12 @@ void UBAPartySelectWidget::NativeConstruct()
 	{
 		PartySlot_2->SetSlotIndex(2);
 		PartySlot_2->OnSlotClicked.AddDynamic(this, &UBAPartySelectWidget::HandleSlotClicked);
+	}
+
+	// 슬롯 팝업은 처음에 숨김 (Visibility 방식)
+	if (CharacterSelectPopup)
+	{
+		CharacterSelectPopup->SetVisibility(ESlateVisibility::Collapsed);
 	}
 
 	LoadPartyFromSubsystem();
@@ -100,24 +108,10 @@ void UBAPartySelectWidget::HandlePresetSelectionChanged(int32 NewIndex)
 
 void UBAPartySelectWidget::HandleSlotClicked(int32 SlotIndex)
 {
+	if (SlotIndex < 0 || SlotIndex >= MaxMembersPerParty) return;
+
 	SelectedSlotIndex = SlotIndex;
-	SelectedSlotIndex = SlotIndex;
-	
-	// 테스트용: 클릭 시 빈 슬롯이면 테스트 캐릭터로 채우기
-	// 나중에 블루프린트에서 캐릭터 선택 창 열기로 변경 가능
-	if (SlotIndex >= 0 && SlotIndex < DisplayPartyIds.Num())
-	{
-		// 빈 슬롯이면 테스트 캐릭터로 채우기
-		if (DisplayPartyIds[SlotIndex] == NAME_None)
-		{
-			SetSlotCharacter(SlotIndex, FName(TEXT("CHR_0001")));
-		}
-		else
-		{
-			// 이미 채워진 슬롯이면 비우기
-			ClearSlot(SlotIndex);
-		}
-	}
+	OpenSlotPopup();
 }
 
 void UBAPartySelectWidget::SelectCharacterForCurrentSlot(FName CharacterId)
@@ -186,4 +180,29 @@ void UBAPartySelectWidget::CloseWindow()
 		WindowLayer->RemoveChild(CurrentWindow);
 		CurrentWindow = nullptr;
 	}
+}
+
+void UBAPartySelectWidget::OpenSlotPopup()
+{
+	if (!CharacterSelectPopup) return;
+
+	// BASelectPopUpWidget이면 보유 캐릭터 ID로 리스트 채우기
+	if (UBASelectPopUpWidget* PopUp = Cast<UBASelectPopUpWidget>(CharacterSelectPopup))
+	{
+		UBACharacterDataSubsystem* Sub = GetSubsystem<UBACharacterDataSubsystem>();
+		if (Sub)
+		{
+			PopUp->SetListCharacterIds(Sub->GetAllOwnedCharacterIds());
+		}
+	}
+
+	CharacterSelectPopup->SetVisibility(ESlateVisibility::Visible);
+	bSlotPopupOpen = true;
+}
+
+void UBAPartySelectWidget::CloseSlotPopup()
+{
+	if (!CharacterSelectPopup) return;
+	CharacterSelectPopup->SetVisibility(ESlateVisibility::Collapsed);
+	bSlotPopupOpen = false;
 }

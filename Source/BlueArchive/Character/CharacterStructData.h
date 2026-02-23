@@ -1,9 +1,10 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
+// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
 #include "CoreMinimal.h"
 #include "Engine/DataTable.h"
+#include "Engine/Texture2D.h"
 #include "CharacterEnumTypes.h"
 #include "CharacterStructData.generated.h"
 
@@ -46,8 +47,9 @@ struct FCharacterRow : public FTableRowBase
     FBaseStats Base;
 
     // ���߿� �ʿ��ϸ� Soft ���ҽ� �߰�
-    // UPROPERTY(EditAnywhere, BlueprintReadOnly)
-    // TSoftObjectPtr<UTexture2D> Portrait;
+    /** 초상화 텍스처. DataTable Row마다 에디터에서 지정. Soft 참조. */
+    UPROPERTY(EditAnywhere, BlueprintReadOnly)
+    TSoftObjectPtr<UTexture2D> Portrait;
 };
 
 USTRUCT(BlueprintType)

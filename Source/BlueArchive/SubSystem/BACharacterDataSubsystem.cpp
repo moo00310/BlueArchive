@@ -145,9 +145,15 @@ void UBACharacterDataSubsystem::LoadOrCreate()
         return;
     }
 
-    //AddOwnedCharacterById(FName(TEXT("CHR_0001")), 01, 01);
-    //AddOwnedCharacterById(FName(TEXT("CHR_0002")), 02, 02);
-    //AddOwnedCharacterById(FName(TEXT("CHR_0003")), 03, 03);
+    AddOwnedCharacterById(FName(TEXT("CHR_001")), 01, 01);
+    AddOwnedCharacterById(FName(TEXT("CHR_002")), 02, 02);
+    AddOwnedCharacterById(FName(TEXT("CHR_003")), 03, 03);
+    AddOwnedCharacterById(FName(TEXT("CHR_004")), 01, 01);
+    AddOwnedCharacterById(FName(TEXT("CHR_005")), 02, 02);
+    AddOwnedCharacterById(FName(TEXT("CHR_006")), 03, 03);
+    AddOwnedCharacterById(FName(TEXT("CHR_007")), 01, 01);
+    AddOwnedCharacterById(FName(TEXT("CHR_008")), 02, 02);
+    AddOwnedCharacterById(FName(TEXT("CHR_009")), 03, 03);
 
     UGameplayStatics::SaveGameToSlot(SaveData, SlotName, UserIndex);
     bDirty = false;
@@ -291,9 +297,9 @@ void UBACharacterDataSubsystem::LoadPartyOrCreate()
     {
         PartySaveData->PartyPresets.SetNum(MaxPartyPresets);
         // 프리셋별로 다른 테스트 데이터 (전환 시 구분되도록)
-        PartySaveData->PartyPresets[0].CharacterIds = { NAME_None, NAME_None, NAME_None };
-        PartySaveData->PartyPresets[1].CharacterIds = { NAME_None, NAME_None, NAME_None };
-        PartySaveData->PartyPresets[2].CharacterIds = { NAME_None, NAME_None, NAME_None };
+        PartySaveData->PartyPresets[0].CharacterIds = { "CHR_001", "CHR_002", "CHR_003" };
+        PartySaveData->PartyPresets[1].CharacterIds = { "CHR_001", "CHR_002", NAME_None };
+        PartySaveData->PartyPresets[2].CharacterIds = { "CHR_001", NAME_None, NAME_None };
         PartySaveData->PartyPresets[3].CharacterIds = { NAME_None, NAME_None, NAME_None };
         UGameplayStatics::SaveGameToSlot(PartySaveData, PartySlotName, UserIndex);
     }
