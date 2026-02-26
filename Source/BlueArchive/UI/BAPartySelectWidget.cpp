@@ -37,10 +37,15 @@ void UBAPartySelectWidget::NativeConstruct()
 		PartySlot_2->OnSlotClicked.AddDynamic(this, &UBAPartySelectWidget::HandleSlotClicked);
 	}
 
-	// 슬롯 팝업은 처음에 숨김 (Visibility 방식)
 	if (CharacterSelectPopup)
 	{
 		CharacterSelectPopup->SetVisibility(ESlateVisibility::Collapsed);
+	}
+
+	if (WidgetToDimWhenPopupOpen)
+	{
+		WidgetToDimWhenPopupOpen->SetVisibility(ESlateVisibility::Collapsed);
+		WidgetToDimWhenPopupOpen->SetRenderOpacity(1.f);
 	}
 
 	// 파티 편집 팝업: 저장 시 적용, 끄기 버튼 시 닫기
@@ -206,6 +211,12 @@ void UBAPartySelectWidget::OpenSlotPopup()
 
 	CharacterSelectPopup->SetVisibility(ESlateVisibility::Visible);
 	bSlotPopupOpen = true;
+
+	if (WidgetToDimWhenPopupOpen)
+	{
+		WidgetToDimWhenPopupOpen->SetRenderOpacity(0.5f);
+		WidgetToDimWhenPopupOpen->SetVisibility(ESlateVisibility::Visible);
+	}
 }
 
 void UBAPartySelectWidget::CloseSlotPopup()
@@ -213,6 +224,12 @@ void UBAPartySelectWidget::CloseSlotPopup()
 	if (!CharacterSelectPopup) return;
 	CharacterSelectPopup->SetVisibility(ESlateVisibility::Collapsed);
 	bSlotPopupOpen = false;
+
+	if (WidgetToDimWhenPopupOpen)
+	{
+		WidgetToDimWhenPopupOpen->SetRenderOpacity(0.f);
+		WidgetToDimWhenPopupOpen->SetVisibility(ESlateVisibility::Collapsed);
+	}
 }
 
 void UBAPartySelectWidget::HandlePopUpCharacterSelected(FName CharacterId)

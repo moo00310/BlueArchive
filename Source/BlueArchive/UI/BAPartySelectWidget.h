@@ -7,6 +7,7 @@
 #include "BAPartySelectWidget.generated.h"
 
 class UPanelWidget;
+class UWidget;
 class UBACharacterDataSubsystem;
 class UBAUser_SDF_DecoWidget;
 class UBAUserWidgetRadio;
@@ -90,9 +91,12 @@ protected:
 	UPROPERTY(meta = (BindWidgetOptional))
 	TObjectPtr<UPanelWidget> WindowLayer;
 
-	/** WindowLayer 안에 넣어둔 캐릭터 선택 팝업 (Visibility로 표시/숨김) */
 	UPROPERTY(meta = (BindWidgetOptional))
 	TObjectPtr<UUserWidget> CharacterSelectPopup;
+
+	/** 별도 딤 오버레이 위젯. 팝업 On일 때 Visible + opacity 0.5로 뒤를 어둡게 하고 입력 차단, Off일 때 Collapsed. WBP에서 초기 Visibility=Collapsed 권장. */
+	UPROPERTY(meta = (BindWidgetOptional))
+	TObjectPtr<UWidget> WidgetToDimWhenPopupOpen;
 
 	UPROPERTY()
 	TObjectPtr<UUserWidget> CurrentWindow = nullptr;
