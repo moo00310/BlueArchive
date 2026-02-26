@@ -62,6 +62,12 @@ private:
 	void HandlePresetSelectionChanged(int32 NewIndex);
 	UFUNCTION()
 	void HandleSlotClicked(int32 SlotIndex);
+	/** 파티 편집 팝업에서 확인 시: 변경된 파티 반영 후 저장·팝업 닫기 */
+	UFUNCTION()
+	void HandlePartyConfirmed(TArray<FName> PartyIds);
+	/** 팝업에서 끄기(취소) 시: NAME_None이면 팝업만 닫기 */
+	UFUNCTION()
+	void HandlePopUpCharacterSelected(FName CharacterId);
 
 	UFUNCTION(BlueprintCallable, Category = "Party|Window")
 	UUserWidget* ShowWindow(TSubclassOf<UUserWidget> WindowClass);

@@ -43,6 +43,13 @@ void UBAPartySelectWidget::NativeConstruct()
 		CharacterSelectPopup->SetVisibility(ESlateVisibility::Collapsed);
 	}
 
+	// 파티 편집 팝업: 저장 시 적용, 끄기 버튼 시 닫기
+	if (UBASelectPopUpWidget* PopUp = Cast<UBASelectPopUpWidget>(CharacterSelectPopup))
+	{
+		PopUp->OnPartyConfirmed.AddDynamic(this, &UBAPartySelectWidget::HandlePartyConfirmed);
+		PopUp->OnCharacterSelected.AddDynamic(this, &UBAPartySelectWidget::HandlePopUpCharacterSelected);
+	}
+
 	LoadPartyFromSubsystem();
 }
 
@@ -186,7 +193,6 @@ void UBAPartySelectWidget::OpenSlotPopup()
 {
 	if (!CharacterSelectPopup) return;
 
-	// BASelectPopUpWidget이면 보유 캐릭터 ID로 리스트 채우기
 	if (UBASelectPopUpWidget* PopUp = Cast<UBASelectPopUpWidget>(CharacterSelectPopup))
 	{
 		UBACharacterDataSubsystem* Sub = GetSubsystem<UBACharacterDataSubsystem>();
@@ -194,6 +200,8 @@ void UBAPartySelectWidget::OpenSlotPopup()
 		{
 			PopUp->SetListCharacterIds(Sub->GetAllOwnedCharacterIds());
 		}
+		// 현재 파티를 팝업에 전달해 상단 슬롯에 표시, 리스트 클릭 시 토글(추가/제거) 가능
+		PopUp->SetCurrentPartyIds(DisplayPartyIds);
 	}
 
 	CharacterSelectPopup->SetVisibility(ESlateVisibility::Visible);
@@ -205,4 +213,28 @@ void UBAPartySelectWidget::CloseSlotPopup()
 	if (!CharacterSelectPopup) return;
 	CharacterSelectPopup->SetVisibility(ESlateVisibility::Collapsed);
 	bSlotPopupOpen = false;
+}
+
+void UBAPartySelectWidget::HandlePopUpCharacterSelected(FName CharacterId)
+{
+	if (CharacterId == NAME_None)
+	{
+		CloseSlotPopup();
+	}
+}
+
+void UBAPartySelectWidget::HandlePartyConfirmed(TArray<FName> PartyIds)
+{
+	DisplayPartyIds.Empty();
+	for (int32 i = 0; i < FMath::Min(PartyIds.Num(), MaxMembersPerParty); ++i)
+	{
+		DisplayPartyIds.Add(PartyIds[i]);
+	}
+	while (DisplayPartyIds.Num() < MaxMembersPerParty)
+	{
+		DisplayPartyIds.Add(NAME_None);
+	}
+	RefreshPartySlots();
+	SavePartyToSubsystem();
+	// CloseSlotPopup(); 
 }

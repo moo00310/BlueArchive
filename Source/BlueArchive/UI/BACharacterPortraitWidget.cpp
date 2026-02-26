@@ -5,6 +5,7 @@
 #include "Character/CharacterStructData.h"
 #include "Components/Image.h"
 #include "Components/Button.h"
+#include "Components/TextBlock.h"
 #include "Input/Reply.h"
 #include "Blueprint/WidgetLayoutLibrary.h"
 
@@ -22,32 +23,48 @@ void UBACharacterPortraitWidget::NativeConstruct()
 
 void UBACharacterPortraitWidget::SetCharacterId(FName NewId)
 {
-	if (CharacterId == NewId) return;
 	CharacterId = NewId;
 	RefreshAppearance();
 }
 
+void UBACharacterPortraitWidget::SetDisplayName(FText InName)
+{
+	if (Text_Name)
+	{
+		Text_Name->SetText(InName);
+	}
+}
+
 void UBACharacterPortraitWidget::RefreshAppearance()
 {
-	if (!Img_Portrait || CharacterId == NAME_None)
-	{
-		return;
-	}
-
 	UBACharacterDataSubsystem* Sub = GetSubsystem<UBACharacterDataSubsystem>();
 	if (!Sub) return;
 
-	FCharacterRow Row;
-	if (!Sub->GetCharacterDefinition(CharacterId, Row))
+	const FName IdToShow = (CharacterId == NAME_None) ? FName(TEXT("CHR_000")) : CharacterId;
+
+	if (Img_Portrait)
 	{
-		return;
+		FCharacterRow Row;
+		if (Sub->GetCharacterDefinition(IdToShow, Row))
+		{
+			UTexture2D* Tex = Row.Portrait.LoadSynchronous();
+			if (Tex)
+			{
+				Img_Portrait->SetBrushFromTexture(Tex);
+			}
+		}
 	}
 
-	// DataTable Row의 Portrait(Soft) 로드 후 이미지에 설정
-	UTexture2D* Tex = Row.Portrait.LoadSynchronous();
-	if (Tex)
+	if (Text_Name)
 	{
-		Img_Portrait->SetBrushFromTexture(Tex);
+		if (CharacterId == NAME_None)
+		{
+			Text_Name->SetText(FText::GetEmpty());
+		}
+		else
+		{
+			Text_Name->SetText(Sub->GetCharacterName(CharacterId));
+		}
 	}
 }
 

@@ -8,6 +8,7 @@
 
 class UImage;
 class UButton;
+class UTextBlock;
 
 /**
  * 리스트에 등록할 캐릭터 초상화 한 칸.
@@ -24,6 +25,10 @@ public:
 
 	UFUNCTION(BlueprintPure, Category = "Character")
 	FName GetCharacterId() const { return CharacterId; }
+
+	/** 이름만 직접 지정 (Text_Name이 있으면 해당 위젯에 표시) */
+	UFUNCTION(BlueprintCallable, Category = "Character")
+	void SetDisplayName(FText InName);
 
 	/** 서브시스템 데이터로 이미지/텍스트 갱신. 블루프린트에서 오버라이드 가능 */
 	UFUNCTION(BlueprintCallable, Category = "Character")
@@ -47,6 +52,9 @@ private:
 
 	UPROPERTY(meta = (BindWidgetOptional))
 	TObjectPtr<UButton> Button_Portrait;
+
+	UPROPERTY(meta = (BindWidgetOptional))
+	TObjectPtr<UTextBlock> Text_Name;
 
 	UPROPERTY(EditAnywhere, Category = "Character")
 	FName CharacterId = NAME_None;

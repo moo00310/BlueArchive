@@ -7,45 +7,76 @@
 #include "BASelectPopUpWidget.generated.h"
 
 class UBACharacterListWidget;
+class UBACharacterPortraitWidget;
 
-/**
- * 캐릭터 선택 팝업 (WBP_SelectPopUp용).
- * Panel_List 자리에 BACharacterListWidget을 두고, 선택 시 OnCharacterSelected 브로드캐스트.
- * 확인/취소 버튼은 블루프린트에서 이 위젯의 ClosePopUp 또는 ConfirmSelection 호출로 연결.
- */
+/** 캐릭터 선택 팝업. 리스트 클릭=파티 등록, 상단 파티 클릭=제거. 저장 버튼=ConfirmPartySelection → OnPartyConfirmed → 부모에서 저장 후 팝업 닫기. */
 UCLASS()
 class BLUEARCHIVE_API UBASelectPopUpWidget : public UBAUserWidget
 {
 	GENERATED_BODY()
 
 public:
+	static constexpr int32 MaxMembersPerParty = 3;
+
 	/** 리스트에 표시할 캐릭터 ID 설정 (보유 캐릭터 등). 설정 후 리스트 갱신 */
 	UFUNCTION(BlueprintCallable, Category = "PopUp")
 	void SetListCharacterIds(const TArray<FName>& InCharacterIds);
 
-	/** 캐릭터 선택 시 브로드캐스트. 부모(BAPartySelectWidget 등)에서 구독 후 SelectCharacterForCurrentSlot + CloseSlotPopup */
+	/** 팝업에 표시할 현재 파티 설정 (열릴 때 부모에서 호출). 슬롯 3개 갱신 */
+	UFUNCTION(BlueprintCallable, Category = "PopUp")
+	void SetCurrentPartyIds(const TArray<FName>& InPartyIds);
+
+	/** 현재 팝업에서 편집 중인 파티 ID 배열 (확인 전까지의 상태) */
+	UFUNCTION(BlueprintPure, Category = "PopUp")
+	TArray<FName> GetCurrentPartyIds() const { return CurrentPartyIds; }
+
+	void RefreshPartySlotsInPopUp();
+
 	DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnCharacterSelected, FName, CharacterId);
 	UPROPERTY(BlueprintAssignable, Category = "PopUp")
 	FOnCharacterSelected OnCharacterSelected;
 
-	/** 팝업 닫기 (취소). 부모에서 CloseSlotPopup 호출하도록 블루프린트에서 연결 */
-	UFUNCTION(BlueprintCallable, Category = "PopUp")
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnPartyConfirmed, TArray<FName>, PartyIds);
+	UPROPERTY(BlueprintAssignable, Category = "PopUp")
+	FOnPartyConfirmed OnPartyConfirmed;
+
+	UFUNCTION(BlueprintCallable, Category = "PopUp", meta = (DisplayName = "Close Popup"))
 	void ClosePopUp();
 
-	/** 선택 확정 시 호출. 리스트에서 선택한 캐릭터가 있으면 OnCharacterSelected 브로드캐스트 후 닫기는 부모에서 처리 */
-	UFUNCTION(BlueprintCallable, Category = "PopUp")
+	UFUNCTION(BlueprintCallable, Category = "PopUp", meta = (DisplayName = "Register Character to Party List"))
 	void ConfirmSelection(FName CharacterId);
+
+	UFUNCTION(BlueprintCallable, Category = "PopUp", meta = (DisplayName = "Save Party and Close"))
+	void ConfirmPartySelection();
+
+	UFUNCTION(BlueprintCallable, Category = "PopUp")
+	void ClearAllPartySlots();
+
+	UFUNCTION(BlueprintCallable, Category = "PopUp")
+	void ClearPartySlotByCharacterId(FName CharacterId);
 
 protected:
 	void NativeConstruct() override;
 
 private:
+	UFUNCTION()
 	void HandleListCharacterSelected(FName CharacterId);
+	UFUNCTION()
+	void HandlePartyPortraitClicked(FName CharacterId);
 
 	UPROPERTY(meta = (BindWidgetOptional))
 	TObjectPtr<UBACharacterListWidget> CharacterList;
 
-	/** 리스트에서 마지막으로 선택된 캐릭터 (확인 버튼 시 사용) */
+	UPROPERTY(meta = (BindWidgetOptional))
+	TObjectPtr<UBACharacterPortraitWidget> PartyPortrait_0;
+	UPROPERTY(meta = (BindWidgetOptional))
+	TObjectPtr<UBACharacterPortraitWidget> PartyPortrait_1;
+	UPROPERTY(meta = (BindWidgetOptional))
+	TObjectPtr<UBACharacterPortraitWidget> PartyPortrait_2;
+
+	UPROPERTY()
+	TArray<FName> CurrentPartyIds;
+
 	UPROPERTY()
 	FName PendingSelectedCharacterId = NAME_None;
 };

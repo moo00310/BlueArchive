@@ -7,6 +7,7 @@
 #include "BACharacterListWidget.generated.h"
 
 class UUniformGridPanel;
+class UScrollBox;
 class UBACharacterPortraitWidget;
 
 /**
@@ -32,6 +33,18 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "List", meta = (ClampMin = 1))
 	int32 ColumnsPerRow = 4;
 
+	/** 각 WBP(초상화) 셀 사이 패딩. Left, Top, Right, Bottom (단위: 슬레이트 유닛) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "List")
+	FMargin SlotPadding = FMargin(4.f, 4.f);
+
+	/** 한 칸의 최소 세로 길이 (0이면 자동). 늘리려면 예: 80~120 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "List", meta = (ClampMin = "0"))
+	float MinSlotHeight = 0.f;
+
+	/** 한 칸의 최소 가로 길이 (0이면 자동) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "List", meta = (ClampMin = "0"))
+	float MinSlotWidth = 0.f;
+
 	/** 리스트에 등록할 초상화 위젯 클래스 (WBP 기반이면 블루프린트 클래스 지정) */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "List")
 	TSubclassOf<UBACharacterPortraitWidget> PortraitWidgetClass;
@@ -40,11 +53,14 @@ protected:
 	void NativeConstruct() override;
 
 private:
+	UFUNCTION()
 	void OnPortraitClicked(FName CharacterId);
+
+	UPROPERTY(meta = (BindWidgetOptional))
+	TObjectPtr<UScrollBox> ScrollBox_List;
 
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UUniformGridPanel> UniformGrid_Panel;
-
 
 	UPROPERTY()
 	TArray<TObjectPtr<UBACharacterPortraitWidget>> PortraitWidgets;

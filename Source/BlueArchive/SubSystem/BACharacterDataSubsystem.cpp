@@ -145,15 +145,11 @@ void UBACharacterDataSubsystem::LoadOrCreate()
         return;
     }
 
-    AddOwnedCharacterById(FName(TEXT("CHR_001")), 01, 01);
-    AddOwnedCharacterById(FName(TEXT("CHR_002")), 02, 02);
-    AddOwnedCharacterById(FName(TEXT("CHR_003")), 03, 03);
-    AddOwnedCharacterById(FName(TEXT("CHR_004")), 01, 01);
-    AddOwnedCharacterById(FName(TEXT("CHR_005")), 02, 02);
-    AddOwnedCharacterById(FName(TEXT("CHR_006")), 03, 03);
-    AddOwnedCharacterById(FName(TEXT("CHR_007")), 01, 01);
-    AddOwnedCharacterById(FName(TEXT("CHR_008")), 02, 02);
-    AddOwnedCharacterById(FName(TEXT("CHR_009")), 03, 03);
+    for (int32 i = 1; i <= 35; ++i)
+    {
+        FName Id = FName(*FString::Printf(TEXT("CHR_%03d"), i));
+        AddOwnedCharacterById(Id, 03, 03);
+    }
 
     UGameplayStatics::SaveGameToSlot(SaveData, SlotName, UserIndex);
     bDirty = false;
