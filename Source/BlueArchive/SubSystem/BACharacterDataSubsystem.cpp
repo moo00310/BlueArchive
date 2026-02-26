@@ -108,9 +108,14 @@ const FCharacterRow* UBACharacterDataSubsystem::FindCharacterRow(FName Character
         return nullptr;
     }
 
-    // DataTable에서 Row 찾기
-    FCharacterRow* RowPtr = CharacterDataTable->FindRow<FCharacterRow>(CharacterId, TEXT("GetCharacterDefinition"));
-    
+    FName RowId = CharacterId;
+    if (CharacterId == NAME_None || CharacterId == FName(TEXT("0")))
+    {
+        RowId = FName(TEXT("CHR_000"));
+    }
+
+    FCharacterRow* RowPtr = CharacterDataTable->FindRow<FCharacterRow>(RowId, TEXT("GetCharacterDefinition"));
+
     if (!RowPtr)
     {
         UE_LOG(LogTemp, Warning, TEXT("BACharacterDataSubsystem: 캐릭터 ID '%s'를 찾을 수 없습니다."), *CharacterId.ToString());
@@ -318,7 +323,7 @@ TArray<FName> UBACharacterDataSubsystem::GetPartyPreset(int32 PresetIndex) const
     }
     while (Result.Num() < MaxMembersPerParty)
     {
-        Result.Add(NAME_None);
+        Result.Add("CHR_000");
     }
     return Result;
 }

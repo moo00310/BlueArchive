@@ -11,6 +11,7 @@ class UWidget;
 class UBACharacterDataSubsystem;
 class UBAUser_SDF_DecoWidget;
 class UBAUserWidgetRadio;
+class UBACharacterPortraitWidget;
 
 UCLASS()
 class BLUEARCHIVE_API UBAPartySelectWidget : public UBAUserWidget
@@ -88,6 +89,10 @@ protected:
 	TObjectPtr<UBAUser_SDF_DecoWidget> PartySlot_1;
 	UPROPERTY(meta = (BindWidgetOptional))
 	TObjectPtr<UBAUser_SDF_DecoWidget> PartySlot_2;
+
+	UPROPERTY(meta = (BindWidgetOptional))
+	TObjectPtr<UBACharacterPortraitWidget> PartyPort_Sup;
+
 	UPROPERTY(meta = (BindWidgetOptional))
 	TObjectPtr<UPanelWidget> WindowLayer;
 

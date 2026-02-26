@@ -2,8 +2,10 @@
 
 #include "UI/BAPartySelectWidget.h"
 #include "UI/BAUser_SDF_DecoWidget.h"
+#include "UI/BACharacterPortraitWidget.h"
 #include "UI/BAUserWidgetRadio.h"
 #include "UI/BASelectPopUpWidget.h"
+#include "UI/BACharacterPortraitWidget.h"
 #include "SubSystem/BACharacterDataSubsystem.h"
 #include "Components/PanelWidget.h"
 #include "Blueprint/UserWidget.h"
@@ -157,6 +159,12 @@ void UBAPartySelectWidget::RefreshPartySlots()
 			FName Id = (i < DisplayPartyIds.Num()) ? DisplayPartyIds[i] : NAME_None;
 			Slots[i]->SetCharacterId(Id);
 		}
+	}
+
+	if (PartyPort_Sup)
+	{
+		FName IdSlot2 = (DisplayPartyIds.Num() > 2) ? DisplayPartyIds[2] : NAME_None;
+		PartyPort_Sup->SetCharacterId(IdSlot2);
 	}
 }
 
