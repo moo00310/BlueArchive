@@ -52,6 +52,7 @@ private:
 	TObjectPtr<UBAPreviewSlotInputWidget> PreviewSlotInput;
 	UPROPERTY(meta = (BindWidgetOptional))
 	TObjectPtr<UUserWidget> CharacterInfoWidget;
+	/** WBP에서 반드시 이름을 "PartySlot"으로 설정해야 바인딩됨 (UBAUser_SDF_DecoWidget 또는 그 상속 블루프린트) */
 	UPROPERTY(meta = (BindWidgetOptional))
 	TObjectPtr<UBAUser_SDF_DecoWidget> PartySlot;
 	UPROPERTY()
