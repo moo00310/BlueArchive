@@ -12,6 +12,26 @@ class UBACharacterDataSubsystem;
 class UBAUser_SDF_DecoWidget;
 class UBAUserWidgetRadio;
 class UBACharacterPortraitWidget;
+class UImage;
+
+USTRUCT(BlueprintType)
+struct BLUEARCHIVE_API FPreviewSlot
+{
+	GENERATED_BODY()
+
+public:
+	UPROPERTY(Transient)
+	TObjectPtr<UImage> Image = nullptr;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UTextureRenderTarget2D> ColorRT = nullptr;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UTextureRenderTarget2D> MaskRT = nullptr;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UMaterialInstanceDynamic> UIMID = nullptr;
+};
 
 UCLASS()
 class BLUEARCHIVE_API UBAPartySelectWidget : public UBAUserWidget
@@ -108,4 +128,32 @@ protected:
 	UPROPERTY()
 	bool bSlotPopupOpen = false;
 
+
+
+
+private: 	// ===== Preview Img====
+	void Make_RT(TObjectPtr<UTextureRenderTarget2D>& OutRT, const FLinearColor& Clear);
+	void InitPreviewSlot(int32 index);
+
+	UPROPERTY(Transient)
+	TArray<FPreviewSlot> PreviewSlots;
+
+	UPROPERTY(meta = (BindWidgetOptional))
+	TObjectPtr<UImage> IMG_Preview_0;  
+
+	UPROPERTY(meta = (BindWidgetOptional))
+	TObjectPtr<UImage> IMG_Preview_1;
+
+	//UPROPERTY(Transient)
+	//TObjectPtr<UTextureRenderTarget2D> PreviewColorRT;
+
+	//UPROPERTY(Transient)
+	//TObjectPtr<UTextureRenderTarget2D> PreviewMaskRT;
+
+
+	UPROPERTY(EditDefaultsOnly, Category = "Preview|UI")
+	TObjectPtr<UMaterialInterface> UI_PreviewMat;
+
+	//UPROPERTY(Transient)
+	//TObjectPtr<UMaterialInstanceDynamic> UI_PreviewMID;
 };

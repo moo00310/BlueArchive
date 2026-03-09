@@ -4,29 +4,57 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/PlayerController.h"
+#include "Engine/StreamableManager.h"
+#include "UI/UIEnumTypes.h"
 #include "BAPlayerController.generated.h"
 
 /**
  * 
  */
+
+class ABAPreviewCharacter;
+class USkeletalMesh;
+class UTextureRenderTarget2D;
+class UAnimInstance;
+class UBAUIManager;
+class UMaterialInterface;
+class UMaterialInstanceDynamic;
+
 UCLASS()
 class BLUEARCHIVE_API ABAPlayerController : public APlayerController
 {
-	GENERATED_BODY()
+    GENERATED_BODY()
 
 public:
-	ABAPlayerController();
-	
-public:
-	UFUNCTION(BlueprintCallable)
-	void RequestShowScreen(EUIScreen ScreenType);
+    ABAPlayerController();
+    virtual void BeginPlay();
 
-protected:
-	virtual void BeginPlay() override;
-	virtual void PlayerTick(float DeltaTime) override;
+    UFUNCTION(BlueprintCallable)
+    void RequestShowScreen(EUIScreen ScreenType);
 
-protected:
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Manager)
-	TObjectPtr<class UBAUIManager> BAUIManager;
+    ABAPreviewCharacter* EnsurePreviewActor(int32 index);
+    void ReleasePreviewActor();
 
+    void ActivatePreview(FName Id, int32 index, UTextureRenderTarget2D* ViewRT, UTextureRenderTarget2D* MaskRT);
+    void UpdatePreview(int32 index, USkeletalMesh* Mesh, TSubclassOf<UAnimInstance> AnimBP);
+
+private:
+    void LoadPreviewAssetsAsync(int32 Index, FName Id,
+        TFunction<void(USkeletalMesh* LoadedMesh, TSubclassOf<UAnimInstance> LoadedAnimBP)> OnLoaded
+    );
+
+private:
+    UPROPERTY(VisibleAnywhere, Category = "UI")
+    TObjectPtr<UBAUIManager> BAUIManager;
+
+    UPROPERTY()
+    TArray<TObjectPtr<ABAPreviewCharacter>> PreviewActors;
+
+    UPROPERTY(EditDefaultsOnly, Category = "Preview|PP")
+    TSubclassOf<ABAPreviewCharacter> PreviewActorClass;
+
+
+private:
+    TArray<TSharedPtr<FStreamableHandle>> PreviewLoadHandles;
+    TArray<int32> PreviewRequestSerials;
 };

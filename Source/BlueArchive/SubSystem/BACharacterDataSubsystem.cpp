@@ -299,9 +299,9 @@ void UBACharacterDataSubsystem::LoadPartyOrCreate()
         PartySaveData->PartyPresets.SetNum(MaxPartyPresets);
         // 프리셋별로 다른 테스트 데이터 (전환 시 구분되도록)
         PartySaveData->PartyPresets[0].CharacterIds = { "CHR_001", "CHR_002", "CHR_003" };
-        PartySaveData->PartyPresets[1].CharacterIds = { "CHR_001", "CHR_002", NAME_None };
-        PartySaveData->PartyPresets[2].CharacterIds = { "CHR_001", NAME_None, NAME_None };
-        PartySaveData->PartyPresets[3].CharacterIds = { NAME_None, NAME_None, NAME_None };
+        PartySaveData->PartyPresets[1].CharacterIds = { "CHR_001", "CHR_002", "CHR_000" };
+        PartySaveData->PartyPresets[2].CharacterIds = { "CHR_001", "CHR_000", "CHR_000" };
+        PartySaveData->PartyPresets[3].CharacterIds = { "CHR_000", "CHR_000", "CHR_000" };
         UGameplayStatics::SaveGameToSlot(PartySaveData, PartySlotName, UserIndex);
     }
 }
@@ -348,4 +348,24 @@ void UBACharacterDataSubsystem::SavePartyNow()
 {
     if (!PartySaveData) return;
     UGameplayStatics::SaveGameToSlot(PartySaveData, PartySlotName, UserIndex);
+}
+
+bool UBACharacterDataSubsystem::GetCharacterPreviewAsset(FName Id, TSoftObjectPtr<USkeletalMesh>& OutMesh, TSoftClassPtr<UAnimInstance>& OutAnimBP)
+{
+    OutMesh = nullptr;
+    OutAnimBP = nullptr;
+
+    if (!CharacterDataTable || Id.IsNone())
+        return false;
+
+    const FCharacterRow* RowPtr =
+        CharacterDataTable->FindRow<FCharacterRow>(Id, TEXT("GetCharacterPreviewAsset"));
+
+    if (!RowPtr)
+        return false;
+
+    OutMesh = RowPtr->PreviewMesh;
+    OutAnimBP = RowPtr->PreviewAnimBP;
+
+    return OutMesh.IsValid() || !OutMesh.IsNull();
 }

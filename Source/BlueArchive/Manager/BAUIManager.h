@@ -14,6 +14,8 @@
  * 
  */
 
+DECLARE_MULTICAST_DELEGATE_TwoParams(FOnScreenChanged, EUIScreen /*Prev*/, EUIScreen /*Next*/);
+
 class UBAScreenCoverWidget;
 class UBAUserWidget;
 
@@ -28,6 +30,7 @@ public:
 public:
 	void ShowScreen_TSubclassOf(EUIScreen ScreenType);
 	void ShowScreen(EUIScreen ScreenType);
+	void HandleScreenChanged(EUIScreen Prev, EUIScreen Next);
 
 public:
 	UPROPERTY(EditDefaultsOnly, Category = "UI|Screen")
@@ -43,7 +46,7 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, Category = "UI|Trail")
 	TSubclassOf<class UBAMouseFXRootWidget> MouseFXRootWidgetClass;
-	
+
 
 private:
 	void PreloadNextScreen();
@@ -70,6 +73,11 @@ private:
 
 	UPROPERTY()
 	TObjectPtr<APlayerController> OwningPC;
+
+
+	FOnScreenChanged OnScreenChanged;
+
+	EUIScreen PrevScreenType = EUIScreen::END;
 
 private:	
 	TSharedPtr<FStreamableHandle> StreamableHandle;

@@ -2,17 +2,26 @@
 
 
 #include "Player/BAPlayerController.h"
+#include "Character/BAPreviewCharacter.h"
+#include "SubSystem/BACharacterDataSubsystem.h"
 #include "Manager/BAUIManager.h"
 
 ABAPlayerController::ABAPlayerController()
 {
 	BAUIManager = CreateDefaultSubobject<UBAUIManager>(TEXT("UIManager"));
+
 }
 
-void ABAPlayerController::RequestShowScreen(EUIScreen ScreenType)
+void ABAPlayerController::ReleasePreviewActor()
 {
-	if(BAUIManager)
-		BAUIManager->ShowScreen(ScreenType);
+	for (auto& actor : PreviewActors)
+	{
+		if (actor && IsValid(actor))
+		{
+			actor->Destroy();
+		}
+		actor = nullptr;
+	}
 }
 
 void ABAPlayerController::BeginPlay()
@@ -34,10 +43,98 @@ void ABAPlayerController::BeginPlay()
 	{
 		BAUIManager->ShowScreen(EUIScreen::MAIN);
 	}
+
+	PreviewActors.SetNum(2);
+	PreviewLoadHandles.SetNum(2);
+	PreviewRequestSerials.SetNum(2);
 }
 
-void ABAPlayerController::PlayerTick(float DeltaTime)
+ABAPreviewCharacter* ABAPlayerController::EnsurePreviewActor(int32 index)
 {
-	Super::PlayerTick(DeltaTime);
+	if (PreviewActors[index] && IsValid(PreviewActors[index])) return PreviewActors[index];
+	if (!PreviewActorClass) return nullptr;
 
+	FActorSpawnParameters Params;
+	Params.Owner = this;
+	Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+	PreviewActors[index] = GetWorld()->SpawnActor<ABAPreviewCharacter>(PreviewActorClass, FTransform::Identity, Params);
+	return PreviewActors[index];
+}
+
+void ABAPlayerController::RequestShowScreen(EUIScreen ScreenType)
+{
+	if (BAUIManager)
+		BAUIManager->ShowScreen(ScreenType);
+}
+
+void ABAPlayerController::ActivatePreview(FName Id, int32 index ,UTextureRenderTarget2D* ViewRT, UTextureRenderTarget2D* MaskRT)
+{
+	if (!ViewRT || !MaskRT) return;
+
+	LoadPreviewAssetsAsync(index, Id, [this, ViewRT, MaskRT, index](USkeletalMesh* Mesh, TSubclassOf<UAnimInstance> AnimBP)
+		{
+			ABAPreviewCharacter* P = EnsurePreviewActor(index);
+			if (!P) return;
+
+			P->Init(Mesh, ViewRT, MaskRT);
+			P->SetCharacter(Mesh, AnimBP);
+		});
+
+}
+
+void ABAPlayerController::UpdatePreview(int32 index, USkeletalMesh* Mesh, TSubclassOf<UAnimInstance> AnimBP)
+{
+	if (!PreviewActors[index] || !IsValid(PreviewActors[index])) return;
+	PreviewActors[index]->SetCharacter(Mesh, AnimBP);
+}
+
+void ABAPlayerController::LoadPreviewAssetsAsync(int32 Index, FName Id, TFunction<void(USkeletalMesh* LoadedMesh, TSubclassOf<UAnimInstance>LoadedAnimBP)> OnLoaded)
+{
+	if (Id.IsNone()) return;
+	if (!PreviewLoadHandles.IsValidIndex(Index) || !PreviewRequestSerials.IsValidIndex(Index)) return;
+
+
+	UBACharacterDataSubsystem* Sub = GetGameInstance()->GetSubsystem<UBACharacterDataSubsystem>();
+	if (!Sub)
+		return;
+
+	TSoftObjectPtr<USkeletalMesh> SoftMesh;
+	TSoftClassPtr<UAnimInstance> SoftAnimBP;
+
+	if (!Sub->GetCharacterPreviewAsset(Id, SoftMesh, SoftAnimBP))
+		return;
+
+	if (SoftMesh.IsNull())
+		return;
+
+	const int32 MySerial = ++PreviewRequestSerials[Index];
+
+	if (PreviewLoadHandles[Index].IsValid())
+	{
+		PreviewLoadHandles[Index]->CancelHandle();
+		PreviewLoadHandles[Index].Reset();
+	}
+
+	TArray<FSoftObjectPath> Paths;
+	Paths.Add(SoftMesh.ToSoftObjectPath());
+	if (!SoftAnimBP.IsNull())
+		Paths.Add(SoftAnimBP.ToSoftObjectPath());
+
+	PreviewLoadHandles[Index] = UAssetManager::GetStreamableManager().RequestAsyncLoad(
+		Paths,
+		FStreamableDelegate::CreateWeakLambda(this, [this, Index, MySerial, SoftMesh, SoftAnimBP, OnLoaded]()
+			{
+				if (MySerial != PreviewRequestSerials[Index])
+					return;
+
+				USkeletalMesh* Mesh = SoftMesh.Get();
+				UClass* AnimClass = SoftAnimBP.Get(); // nullptr 가능
+
+				if (!Mesh)
+					return;
+
+				OnLoaded(Mesh, AnimClass);
+			})
+	);
 }

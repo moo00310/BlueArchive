@@ -9,6 +9,10 @@
 #include "SubSystem/BACharacterDataSubsystem.h"
 #include "Components/PanelWidget.h"
 #include "Blueprint/UserWidget.h"
+#include "Player/BAPlayerController.h"
+#include "Engine/TextureRenderTarget2D.h"
+#include "Components/Image.h"
+#include "Blueprint/WidgetBlueprintLibrary.h"
 #include "Components/Widget.h"
 
 void UBAPartySelectWidget::NativeConstruct()
@@ -58,6 +62,50 @@ void UBAPartySelectWidget::NativeConstruct()
 	}
 
 	LoadPartyFromSubsystem();
+
+	PreviewSlots.SetNum(4);
+	PreviewSlots[0].Image = IMG_Preview_0;
+	PreviewSlots[1].Image = IMG_Preview_1;
+
+
+	InitPreviewSlot(0);
+	InitPreviewSlot(1);
+}
+
+void UBAPartySelectWidget::Make_RT(TObjectPtr<UTextureRenderTarget2D>& OutRT, const FLinearColor& Clear)
+{
+	if (!OutRT)
+	{
+		OutRT = NewObject<UTextureRenderTarget2D>(this);
+		OutRT->InitCustomFormat(1024, 1024, PF_B8G8R8A8, false);
+		OutRT->ClearColor = Clear;
+		OutRT->UpdateResourceImmediate(true);
+	}
+}
+
+void UBAPartySelectWidget::InitPreviewSlot(int32 Index)
+{
+	FPreviewSlot& S = PreviewSlots[Index];
+	if (!S.Image || !UI_PreviewMat) return;
+
+	Make_RT(S.ColorRT, FLinearColor(0, 0, 0, 1));
+	Make_RT(S.MaskRT, FLinearColor(0, 0, 0, 0));
+
+	if (!S.UIMID)
+		S.UIMID = UMaterialInstanceDynamic::Create(UI_PreviewMat, this);
+
+	S.UIMID->SetTextureParameterValue(TEXT("ColorTex"), S.ColorRT);
+	S.UIMID->SetTextureParameterValue(TEXT("MaskTex"), S.MaskRT);
+
+	S.Image->SetBrushFromMaterial(S.UIMID);
+
+	if (ABAPlayerController* PC = Cast<ABAPlayerController>(GetOwningPlayer()))
+	{
+		if (DisplayPartyIds.IsValidIndex(Index) && !DisplayPartyIds[Index].IsNone())
+		{
+			PC->ActivatePreview(DisplayPartyIds[Index], Index, S.ColorRT, S.MaskRT);
+		}
+	}
 }
 
 void UBAPartySelectWidget::LoadPartyFromSubsystem()
@@ -70,6 +118,7 @@ void UBAPartySelectWidget::LoadPartyFromSubsystem()
 	}
 
 	UBACharacterDataSubsystem* Subsystem = GetSubsystem<UBACharacterDataSubsystem>();
+
 	if (Subsystem)
 	{
 		TArray<FName> Saved = Subsystem->GetPartyPreset(PresetIndex);
@@ -106,6 +155,7 @@ void UBAPartySelectWidget::SwitchPreset(int32 PresetIndex)
 {
 	if (PresetIndex < 0 || PresetIndex >= MaxPartyPresets) return;
 	CurrentPresetIndex = PresetIndex;
+
 	LoadPartyFromSubsystem();
 
 	// 라디오 위젯에도 동기화 (bBroadcast=false로 무한 루프 방지)

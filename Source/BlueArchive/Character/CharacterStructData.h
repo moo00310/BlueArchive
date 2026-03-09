@@ -28,8 +28,6 @@ struct FCharacterRow : public FTableRowBase
 {
     GENERATED_BODY()
 
-    // ������ RowName ��ü�� ID�� ���ϱ�, ���� CharacterId �ʵ�� ��� ��.
-    // �ְ� ������ �����ص� ������, RowName�� �ߺ� ������ ����.
     UPROPERTY(EditAnywhere, BlueprintReadOnly)
     FText DisplayName;
 
@@ -46,10 +44,15 @@ struct FCharacterRow : public FTableRowBase
     UPROPERTY(EditAnywhere, BlueprintReadOnly)
     FBaseStats Base;
 
-    // ���߿� �ʿ��ϸ� Soft ���ҽ� �߰�
     /** 초상화 텍스처. DataTable Row마다 에디터에서 지정. Soft 참조. */
     UPROPERTY(EditAnywhere, BlueprintReadOnly)
     TSoftObjectPtr<UTexture2D> Portrait;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly)
+    TSoftObjectPtr<USkeletalMesh> PreviewMesh;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly)
+    TSoftClassPtr<UAnimInstance> PreviewAnimBP;
 };
 
 USTRUCT(BlueprintType)
@@ -57,7 +60,6 @@ struct FOwnedCharacter
 {
     GENERATED_BODY()
 
-    // Definition�� ����Ű�� Ű(RowName)
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     FName CharacterId = NAME_None;
 

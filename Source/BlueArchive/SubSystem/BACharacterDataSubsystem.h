@@ -143,6 +143,9 @@ public:
     UFUNCTION(BlueprintCallable, Category = "Character|Party")
     void SetPartyPreset(int32 PresetIndex, const TArray<FName>& CharacterIds);
 
+    // ====== 모델 에셋 찾기 / 로드 ======
+    bool GetCharacterPreviewAsset(FName Id, TSoftObjectPtr<USkeletalMesh>& OutMesh, TSoftClassPtr<UAnimInstance>& OutAnimBP);
+
 protected:
     /**
      * 캐릭터 데이터 DataTable (블루프린트에서 할당)
@@ -177,4 +180,5 @@ private:
     TObjectPtr<UBAPartySaveGame> PartySaveData;
 
     FString PartySlotName = TEXT("BA_PartySlot");
+ 
 };
