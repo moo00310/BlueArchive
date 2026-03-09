@@ -1,19 +1,23 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "UI/BAPartySelectWidget.h"
+#include "UI/BAPreviewSlotPanelWidget.h"
+#include "UI/BAPreviewSlotInputWidget.h"
 #include "UI/BAUser_SDF_DecoWidget.h"
 #include "UI/BACharacterPortraitWidget.h"
 #include "UI/BAUserWidgetRadio.h"
 #include "UI/BASelectPopUpWidget.h"
-#include "UI/BACharacterPortraitWidget.h"
 #include "SubSystem/BACharacterDataSubsystem.h"
 #include "Components/PanelWidget.h"
 #include "Blueprint/UserWidget.h"
 #include "Player/BAPlayerController.h"
 #include "Engine/TextureRenderTarget2D.h"
+#include "Kismet/KismetRenderingLibrary.h"
 #include "Components/Image.h"
 #include "Blueprint/WidgetBlueprintLibrary.h"
 #include "Components/Widget.h"
+
+DEFINE_LOG_CATEGORY_STATIC(LogBAPartyPreview, Log, All);
 
 void UBAPartySelectWidget::NativeConstruct()
 {
@@ -22,25 +26,7 @@ void UBAPartySelectWidget::NativeConstruct()
 	if (Radio_PresetSelector)
 	{
 		Radio_PresetSelector->OnSelectionChanged.AddDynamic(this, &UBAPartySelectWidget::HandlePresetSelectionChanged);
-		// 현재 프리셋 인덱스로 라디오 동기화 (bBroadcast=false로 무한 루프 방지)
 		Radio_PresetSelector->SetSelectedIndex(CurrentPresetIndex, false);
-	}
-
-	// 슬롯 클릭 이벤트 구독: 슬롯 클릭 시 SetSlotCharacter 호출 (캐릭터 선택 창 열기 등)
-	if (PartySlot_0)
-	{
-		PartySlot_0->SetSlotIndex(0);
-		PartySlot_0->OnSlotClicked.AddDynamic(this, &UBAPartySelectWidget::HandleSlotClicked);
-	}
-	if (PartySlot_1)
-	{
-		PartySlot_1->SetSlotIndex(1);
-		PartySlot_1->OnSlotClicked.AddDynamic(this, &UBAPartySelectWidget::HandleSlotClicked);
-	}
-	if (PartySlot_2)
-	{
-		PartySlot_2->SetSlotIndex(2);
-		PartySlot_2->OnSlotClicked.AddDynamic(this, &UBAPartySelectWidget::HandleSlotClicked);
 	}
 
 	if (CharacterSelectPopup)
@@ -54,7 +40,6 @@ void UBAPartySelectWidget::NativeConstruct()
 		WidgetToDimWhenPopupOpen->SetRenderOpacity(1.f);
 	}
 
-	// 파티 편집 팝업: 저장 시 적용, 끄기 버튼 시 닫기
 	if (UBASelectPopUpWidget* PopUp = Cast<UBASelectPopUpWidget>(CharacterSelectPopup))
 	{
 		PopUp->OnPartyConfirmed.AddDynamic(this, &UBAPartySelectWidget::HandlePartyConfirmed);
@@ -64,12 +49,57 @@ void UBAPartySelectWidget::NativeConstruct()
 	LoadPartyFromSubsystem();
 
 	PreviewSlots.SetNum(4);
-	PreviewSlots[0].Image = IMG_Preview_0;
-	PreviewSlots[1].Image = IMG_Preview_1;
+	// 패널(PreviewSlotInput + CharacterInfo 감싼 WBP) 우선, 없으면 입력 위젯만, 없으면 기존 Image
+	auto SetupSlot = [this](int32 Index,
+		UBAPreviewSlotPanelWidget* Panel,
+		UBAPreviewSlotInputWidget* InputWidget,
+		UImage* FallbackImage)
+	{
+		if (Panel)
+		{
+			Panel->SetSlotIndex(Index);
+			Panel->OnLongPress.AddDynamic(this, &UBAPartySelectWidget::HandlePreviewSlotLongPress);
+			Panel->OnShortClick.AddDynamic(this, &UBAPartySelectWidget::HandlePreviewSlotShortClick);
+			PreviewSlots[Index].Image = Panel->GetPreviewImage();
+		}
+		else if (InputWidget)
+		{
+			InputWidget->SetSlotIndex(Index);
+			InputWidget->OnLongPress.AddDynamic(this, &UBAPartySelectWidget::HandlePreviewSlotLongPress);
+			InputWidget->OnShortClick.AddDynamic(this, &UBAPartySelectWidget::HandlePreviewSlotShortClick);
+			PreviewSlots[Index].Image = InputWidget->GetPreviewImage();
+		}
+		else
+		{
+			PreviewSlots[Index].Image = FallbackImage;
+		}
+	};
+	SetupSlot(0, PreviewSlotPanel_0, PreviewSlotInput_0, IMG_Preview_0);
+	SetupSlot(1, PreviewSlotPanel_1, PreviewSlotInput_1, IMG_Preview_1);
 
+	// 슬롯 클릭 구독: 0/1은 패널 내부 PartySlot, 2는 PartySlot_Sup. 패널 SetSlotIndex(0/1) 이후에 구독.
+	for (int32 i = 0; i < MaxMembersPerParty; ++i)
+	{
+		if (UBAUser_SDF_DecoWidget* slot = GetPartySlotForIndex(i))
+		{
+			slot->SetSlotIndex(i);
+			slot->OnSlotClicked.AddDynamic(this, &UBAPartySelectWidget::HandleSlotClicked);
+		}
+	}
 
 	InitPreviewSlot(0);
 	InitPreviewSlot(1);
+}
+
+UBAUser_SDF_DecoWidget* UBAPartySelectWidget::GetPartySlotForIndex(int32 Index) const
+{
+	if (Index == 0 && PreviewSlotPanel_0)
+		return PreviewSlotPanel_0->GetPartySlot();
+	if (Index == 1 && PreviewSlotPanel_1)
+		return PreviewSlotPanel_1->GetPartySlot();
+	if (Index == 2 && PartySlot_Sup)
+		return PartySlot_Sup;
+	return nullptr;
 }
 
 void UBAPartySelectWidget::Make_RT(TObjectPtr<UTextureRenderTarget2D>& OutRT, const FLinearColor& Clear)
@@ -77,7 +107,7 @@ void UBAPartySelectWidget::Make_RT(TObjectPtr<UTextureRenderTarget2D>& OutRT, co
 	if (!OutRT)
 	{
 		OutRT = NewObject<UTextureRenderTarget2D>(this);
-		OutRT->InitCustomFormat(1024, 1024, PF_B8G8R8A8, false);
+		OutRT->InitCustomFormat(512, 512, PF_B8G8R8A8, false);
 		OutRT->ClearColor = Clear;
 		OutRT->UpdateResourceImmediate(true);
 	}
@@ -104,6 +134,59 @@ void UBAPartySelectWidget::InitPreviewSlot(int32 Index)
 		if (DisplayPartyIds.IsValidIndex(Index) && !DisplayPartyIds[Index].IsNone())
 		{
 			PC->ActivatePreview(DisplayPartyIds[Index], Index, S.ColorRT, S.MaskRT);
+		}
+	}
+}
+
+void UBAPartySelectWidget::RefreshPreviewSlot(int32 Index)
+{
+	UE_LOG(LogBAPartyPreview, Log, TEXT("RefreshPreviewSlot 호출됨 Index=%d"), Index);
+
+	// 프리뷰 이미지가 있는 슬롯은 0, 1만 해당
+	if (Index < 0 || Index >= PreviewSlots.Num())
+	{
+		UE_LOG(LogBAPartyPreview, Warning, TEXT("RefreshPreviewSlot: 인덱스 범위 밖 → return (Index=%d)"), Index);
+		return;
+	}
+
+	FPreviewSlot& S = PreviewSlots[Index];
+	if (!S.Image || !UI_PreviewMat)
+	{
+		UE_LOG(LogBAPartyPreview, Warning, TEXT("RefreshPreviewSlot: Image 또는 UI_PreviewMat 없음 → return (Index=%d)"), Index);
+		return;
+	}
+
+	// 아직 초기화 안 된 슬롯이면 한 번 초기화 후 종료 (InitPreviewSlot이 갱신까지 수행)
+	if (!S.ColorRT || !S.MaskRT)
+	{
+		UE_LOG(LogBAPartyPreview, Log, TEXT("RefreshPreviewSlot: 슬롯 미초기화 → InitPreviewSlot(%d) 호출"), Index);
+		InitPreviewSlot(Index);
+		return;
+	}
+
+	FName Id = DisplayPartyIds.IsValidIndex(Index) ? DisplayPartyIds[Index] : NAME_None;
+
+	if (Id.IsNone())
+	{
+		UE_LOG(LogBAPartyPreview, Log, TEXT("RefreshPreviewSlot: 슬롯 비움 → 캡처 해제 후 RT 클리어 (Index=%d)"), Index);
+		// 슬롯 비움: 먼저 해당 슬롯이 RT에 그리지 않도록 캡처 해제(선택지 B), 그 다음 RT 클리어
+		if (ABAPlayerController* PC = Cast<ABAPlayerController>(GetOwningPlayer()))
+		{
+			PC->ClearPreview(Index);
+		}
+		UKismetRenderingLibrary::ClearRenderTarget2D(this, S.ColorRT, FLinearColor(0.f, 0.f, 0.f, 0.f));
+		UKismetRenderingLibrary::ClearRenderTarget2D(this, S.MaskRT, FLinearColor(0.f, 0.f, 0.f, 0.f));
+	}
+	else
+	{
+		UE_LOG(LogBAPartyPreview, Log, TEXT("RefreshPreviewSlot: ActivatePreview 호출 (Index=%d, Id=%s)"), Index, *Id.ToString());
+		if (ABAPlayerController* PC = Cast<ABAPlayerController>(GetOwningPlayer()))
+		{
+			PC->ActivatePreview(Id, Index, S.ColorRT, S.MaskRT);
+		}
+		else
+		{
+			UE_LOG(LogBAPartyPreview, Warning, TEXT("RefreshPreviewSlot: GetOwningPlayer()가 BAPlayerController가 아님 (Index=%d)"), Index);
 		}
 	}
 }
@@ -157,6 +240,9 @@ void UBAPartySelectWidget::SwitchPreset(int32 PresetIndex)
 	CurrentPresetIndex = PresetIndex;
 
 	LoadPartyFromSubsystem();
+	UE_LOG(LogBAPartyPreview, Log, TEXT("SwitchPreset(PresetIndex=%d) → RefreshPreviewSlot(0), (1) 호출"), PresetIndex);
+	RefreshPreviewSlot(0);
+	RefreshPreviewSlot(1);
 
 	// 라디오 위젯에도 동기화 (bBroadcast=false로 무한 루프 방지)
 	if (Radio_PresetSelector)
@@ -194,20 +280,21 @@ void UBAPartySelectWidget::SetSlotCharacter(int32 SlotIndex, FName CharacterId)
 	}
 	DisplayPartyIds[SlotIndex] = CharacterId;
 	RefreshPartySlots();
+	if (SlotIndex >= 0 && SlotIndex <= 1)
+	{
+		UE_LOG(LogBAPartyPreview, Log, TEXT("SetSlotCharacter → RefreshPreviewSlot(%d) 호출 (CharacterId=%s)"), SlotIndex, *CharacterId.ToString());
+		RefreshPreviewSlot(SlotIndex);
+	}
 }
 
 void UBAPartySelectWidget::RefreshPartySlots()
 {
-	UBAUser_SDF_DecoWidget* Slots[] = { PartySlot_0, PartySlot_1, PartySlot_2 };
-	int32 BoundCount = (PartySlot_0 ? 1 : 0) + (PartySlot_1 ? 1 : 0) + (PartySlot_2 ? 1 : 0);
-	if (BoundCount == 0) return;
-
 	for (int32 i = 0; i < MaxMembersPerParty; ++i)
 	{
-		if (Slots[i])
+		if (UBAUser_SDF_DecoWidget* slot = GetPartySlotForIndex(i))
 		{
 			FName Id = (i < DisplayPartyIds.Num()) ? DisplayPartyIds[i] : NAME_None;
-			Slots[i]->SetCharacterId(Id);
+			slot->SetCharacterId(Id);
 		}
 	}
 
@@ -298,6 +385,19 @@ void UBAPartySelectWidget::HandlePopUpCharacterSelected(FName CharacterId)
 	}
 }
 
+void UBAPartySelectWidget::HandlePreviewSlotLongPress(int32 SlotIndex)
+{
+	UE_LOG(LogBAPartyPreview, Log, TEXT("Preview slot long press: %d (애니 변경·드래그는 다음 단계에서)"), SlotIndex);
+	// TODO: 해당 슬롯 프리뷰 캐릭터 애니메이션 변경 + 드래그 가능 상태
+}
+
+void UBAPartySelectWidget::HandlePreviewSlotShortClick(int32 SlotIndex)
+{
+	if (SlotIndex < 0 || SlotIndex >= MaxMembersPerParty) return;
+	SelectedSlotIndex = SlotIndex;
+	OpenSlotPopup();
+}
+
 void UBAPartySelectWidget::HandlePartyConfirmed(TArray<FName> PartyIds)
 {
 	DisplayPartyIds.Empty();
@@ -311,5 +411,8 @@ void UBAPartySelectWidget::HandlePartyConfirmed(TArray<FName> PartyIds)
 	}
 	RefreshPartySlots();
 	SavePartyToSubsystem();
+	UE_LOG(LogBAPartyPreview, Log, TEXT("HandlePartyConfirmed → RefreshPreviewSlot(0), (1) 호출"));
+	RefreshPreviewSlot(0);
+	RefreshPreviewSlot(1);
 	// CloseSlotPopup(); 
 }

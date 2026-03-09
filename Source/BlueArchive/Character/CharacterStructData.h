@@ -38,7 +38,6 @@ struct FCharacterRow : public FTableRowBase
     EDefenseType DefenseType;
 
     UPROPERTY(EditAnywhere, BlueprintReadOnly)
-
     EPosRoleType PositionType;
 
     UPROPERTY(EditAnywhere, BlueprintReadOnly)

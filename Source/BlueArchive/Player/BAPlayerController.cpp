@@ -1,4 +1,4 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
+// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "Player/BAPlayerController.h"
@@ -80,7 +80,16 @@ void ABAPlayerController::ActivatePreview(FName Id, int32 index ,UTextureRenderT
 			P->Init(Mesh, ViewRT, MaskRT);
 			P->SetCharacter(Mesh, AnimBP);
 		});
+}
 
+void ABAPlayerController::ClearPreview(int32 Index)
+{
+	if (!PreviewActors.IsValidIndex(Index)) return;
+	ABAPreviewCharacter* P = PreviewActors[Index];
+	if (P && IsValid(P))
+	{
+		P->SetRenderTargets(nullptr, nullptr);
+	}
 }
 
 void ABAPlayerController::UpdatePreview(int32 index, USkeletalMesh* Mesh, TSubclassOf<UAnimInstance> AnimBP)

@@ -2,6 +2,7 @@
 
 
 #include "Character/BAPreviewCharacter.h"
+#include "Engine/TextureRenderTarget2D.h"
 
 // Sets default values
 ABAPreviewCharacter::ABAPreviewCharacter()
@@ -39,11 +40,11 @@ void ABAPreviewCharacter::Init(USkeletalMesh* Mesh, UTextureRenderTarget2D* View
     CaptureColor->ShowOnlyComponent(Skel);
     CaptureColor->CaptureSource = SCS_FinalColorHDR;
 
-    // (¼±ÅÃ) ÄÃ·¯°¡ ¿ùµå PP ¿µÇâ ´ú ¹Þ°Ô
+    // (????) ?ï¿½ï¿½??? ???? PP ???? ?? ???
     CaptureColor->ShowFlags = FEngineShowFlags(EShowFlagInitMode::ESFIM_Game);
-    CaptureColor->ShowFlags.SetPostProcessing(false); // ¿øÇÏ¸é true·Î µÎ°í °³º°¸¸ ²ô±â
+    CaptureColor->ShowFlags.SetPostProcessing(false); // ????? true?? ??? ?????? ????
 
-    // ³ëÃâ °íÁ¤(ÄÃ·¯¿¡µµ Àû¿ë ÃßÃµ)
+    // ???? ????(?ï¿½ï¿½????? ???? ???)
     CaptureColor->PostProcessSettings.bOverride_AutoExposureMinBrightness = true;
     CaptureColor->PostProcessSettings.bOverride_AutoExposureMaxBrightness = true;
     CaptureColor->PostProcessSettings.AutoExposureMinBrightness = 1.0f;
@@ -83,10 +84,22 @@ void ABAPreviewCharacter::SetCharacter(USkeletalMesh* NewMesh, TSubclassOf<UAnim
         CaptureColor->ShowOnlyComponent(Skel);
     }
 
-    if (CaptureMask)
-    {
-        CaptureMask->ClearShowOnlyComponents();
-        CaptureMask->ShowOnlyComponent(Skel);
-    }
+	if (CaptureMask)
+	{
+		CaptureMask->ClearShowOnlyComponents();
+		CaptureMask->ShowOnlyComponent(Skel);
+	}
+}
+
+void ABAPreviewCharacter::SetRenderTargets(UTextureRenderTarget2D* ColorRT, UTextureRenderTarget2D* MaskRT)
+{
+	if (CaptureColor)
+	{
+		CaptureColor->TextureTarget = ColorRT;
+	}
+	if (CaptureMask)
+	{
+		CaptureMask->TextureTarget = MaskRT;
+	}
 }
 

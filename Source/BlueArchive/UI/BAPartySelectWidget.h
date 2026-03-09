@@ -12,6 +12,8 @@ class UBACharacterDataSubsystem;
 class UBAUser_SDF_DecoWidget;
 class UBAUserWidgetRadio;
 class UBACharacterPortraitWidget;
+class UBAPreviewSlotInputWidget;
+class UBAPreviewSlotPanelWidget;
 class UImage;
 
 USTRUCT(BlueprintType)
@@ -39,20 +41,15 @@ class BLUEARCHIVE_API UBAPartySelectWidget : public UBAUserWidget
 	GENERATED_BODY()
 
 public:
+	// --- 상수 ---
 	static constexpr int32 MaxPartyPresets = 4;
 	static constexpr int32 MaxMembersPerParty = 3;
 
+	// --- Party API ---
 	UFUNCTION(BlueprintPure, Category = "Party")
 	static int32 GetMaxPartyPresets() { return MaxPartyPresets; }
 	UFUNCTION(BlueprintPure, Category = "Party")
 	static int32 GetMaxMembersPerParty() { return MaxMembersPerParty; }
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Party")
-	TArray<FName> DisplayPartyIds;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Party")
-	int32 CurrentPresetIndex = 0;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Party")
-	int32 SelectedSlotIndex = -1;
 
 	UFUNCTION(BlueprintCallable, Category = "Party")
 	void LoadPartyFromSubsystem();
@@ -70,27 +67,13 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Party")
 	void RefreshPartySlots();
 
-	/** 슬롯 클릭 시 뜨는 캐릭터 선택 팝업 열기 (Visibility) */
+	// --- Party|Window ---
 	UFUNCTION(BlueprintCallable, Category = "Party|Window")
 	void OpenSlotPopup();
-	/** 캐릭터 선택 팝업 닫기 (Visibility) */
 	UFUNCTION(BlueprintCallable, Category = "Party|Window")
 	void CloseSlotPopup();
 	UFUNCTION(BlueprintPure, Category = "Party|Window")
 	bool IsSlotPopupOpen() const { return bSlotPopupOpen; }
-
-private:
-	UFUNCTION()
-	void HandlePresetSelectionChanged(int32 NewIndex);
-	UFUNCTION()
-	void HandleSlotClicked(int32 SlotIndex);
-	/** 파티 편집 팝업에서 확인 시: 변경된 파티 반영 후 저장·팝업 닫기 */
-	UFUNCTION()
-	void HandlePartyConfirmed(TArray<FName> PartyIds);
-	/** 팝업에서 끄기(취소) 시: NAME_None이면 팝업만 닫기 */
-	UFUNCTION()
-	void HandlePopUpCharacterSelected(FName CharacterId);
-
 	UFUNCTION(BlueprintCallable, Category = "Party|Window")
 	UUserWidget* ShowWindow(TSubclassOf<UUserWidget> WindowClass);
 	UFUNCTION(BlueprintCallable, Category = "Party|Window")
@@ -98,62 +81,67 @@ private:
 	UFUNCTION(BlueprintPure, Category = "Party|Window")
 	UUserWidget* GetCurrentWindow() const { return CurrentWindow; }
 
+	// --- public 멤버 변수 ---
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Party")
+	TArray<FName> DisplayPartyIds;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Party")
+	int32 CurrentPresetIndex = 0;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Party")
+	int32 SelectedSlotIndex = -1;
+
 protected:
 	void NativeConstruct() override;
 
 	UPROPERTY(meta = (BindWidgetOptional))
 	TObjectPtr<UBAUserWidgetRadio> Radio_PresetSelector;
 	UPROPERTY(meta = (BindWidgetOptional))
-	TObjectPtr<UBAUser_SDF_DecoWidget> PartySlot_0;
-	UPROPERTY(meta = (BindWidgetOptional))
-	TObjectPtr<UBAUser_SDF_DecoWidget> PartySlot_1;
-	UPROPERTY(meta = (BindWidgetOptional))
-	TObjectPtr<UBAUser_SDF_DecoWidget> PartySlot_2;
-
+	TObjectPtr<UBAUser_SDF_DecoWidget> PartySlot_Sup;
 	UPROPERTY(meta = (BindWidgetOptional))
 	TObjectPtr<UBACharacterPortraitWidget> PartyPort_Sup;
-
 	UPROPERTY(meta = (BindWidgetOptional))
 	TObjectPtr<UPanelWidget> WindowLayer;
-
 	UPROPERTY(meta = (BindWidgetOptional))
 	TObjectPtr<UUserWidget> CharacterSelectPopup;
-
-	/** 별도 딤 오버레이 위젯. 팝업 On일 때 Visible + opacity 0.5로 뒤를 어둡게 하고 입력 차단, Off일 때 Collapsed. WBP에서 초기 Visibility=Collapsed 권장. */
 	UPROPERTY(meta = (BindWidgetOptional))
 	TObjectPtr<UWidget> WidgetToDimWhenPopupOpen;
-
 	UPROPERTY()
 	TObjectPtr<UUserWidget> CurrentWindow = nullptr;
 	UPROPERTY()
 	bool bSlotPopupOpen = false;
 
-
-
-
-private: 	// ===== Preview Img====
+private:
+	UBAUser_SDF_DecoWidget* GetPartySlotForIndex(int32 Index) const;
 	void Make_RT(TObjectPtr<UTextureRenderTarget2D>& OutRT, const FLinearColor& Clear);
 	void InitPreviewSlot(int32 index);
+	void RefreshPreviewSlot(int32 Index);
+
+	UFUNCTION()
+	void HandlePresetSelectionChanged(int32 NewIndex);
+	UFUNCTION()
+	void HandleSlotClicked(int32 SlotIndex);
+	UFUNCTION()
+	void HandlePartyConfirmed(TArray<FName> PartyIds);
+	UFUNCTION()
+	void HandlePopUpCharacterSelected(FName CharacterId);
+	UFUNCTION()
+	void HandlePreviewSlotLongPress(int32 SlotIndex);
+	UFUNCTION()
+	void HandlePreviewSlotShortClick(int32 SlotIndex);
 
 	UPROPERTY(Transient)
 	TArray<FPreviewSlot> PreviewSlots;
-
 	UPROPERTY(meta = (BindWidgetOptional))
-	TObjectPtr<UImage> IMG_Preview_0;  
-
+	TObjectPtr<UBAPreviewSlotPanelWidget> PreviewSlotPanel_0;
+	UPROPERTY(meta = (BindWidgetOptional))
+	TObjectPtr<UBAPreviewSlotPanelWidget> PreviewSlotPanel_1;
+	UPROPERTY(meta = (BindWidgetOptional))
+	TObjectPtr<UBAPreviewSlotInputWidget> PreviewSlotInput_0;
+	UPROPERTY(meta = (BindWidgetOptional))
+	TObjectPtr<UBAPreviewSlotInputWidget> PreviewSlotInput_1;
+	UPROPERTY(meta = (BindWidgetOptional))
+	TObjectPtr<UImage> IMG_Preview_0;
 	UPROPERTY(meta = (BindWidgetOptional))
 	TObjectPtr<UImage> IMG_Preview_1;
-
-	//UPROPERTY(Transient)
-	//TObjectPtr<UTextureRenderTarget2D> PreviewColorRT;
-
-	//UPROPERTY(Transient)
-	//TObjectPtr<UTextureRenderTarget2D> PreviewMaskRT;
-
-
 	UPROPERTY(EditDefaultsOnly, Category = "Preview|UI")
 	TObjectPtr<UMaterialInterface> UI_PreviewMat;
-
-	//UPROPERTY(Transient)
-	//TObjectPtr<UMaterialInstanceDynamic> UI_PreviewMID;
 };
