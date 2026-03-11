@@ -126,7 +126,13 @@ private:
 	UFUNCTION()
 	void HandlePreviewSlotLongPress(int32 SlotIndex);
 	UFUNCTION()
+	void HandlePreviewSlotUnpressed(int32 SlotIndex);
+	UFUNCTION()
 	void HandlePreviewSlotShortClick(int32 SlotIndex);
+	UFUNCTION()
+	void HandlePreviewSlotDropTarget(int32 FromSlotIndex, int32 ToSlotIndex);
+	UFUNCTION()
+	void HandlePreviewSlotDragStarted(int32 SlotIndex);
 
 	UPROPERTY(Transient)
 	TArray<FPreviewSlot> PreviewSlots;

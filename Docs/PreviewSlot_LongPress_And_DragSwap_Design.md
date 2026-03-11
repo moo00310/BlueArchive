@@ -49,20 +49,16 @@
   - **Blueprint**: Button의 Pressed/Released에 “Pressed 시 타이머 시작, Released 시 타이머 취소 또는 롱프레스 완료” 로직 넣기.
 - **주의**: 프리뷰 Image가 클릭을 가로채야 하므로, 해당 위젯은 **Hit Test Visible** 이어야 함. (Image 기본값이 보통 막혀 있으면 `Visibility` 또는 `Hit Test Invisible` 여부 확인.)
 
-### 3-2. “꾹 누르면 애니메이션 바뀜”
+### 3-2. “꾹 누르면 애니메이션 바뀜” (단일 AnimBP 방식)
 
-- **의미**: 해당 슬롯(0 또는 1)에 대응하는 `ABAPreviewCharacter`의 **애니메이션만** 바꾸면 됨.
-- **가능한 방법**  
-  1. **애니 블루프린트에 bool 입력 추가**  
-     - 예: AnimBP에 `IsPressed` 같은 변수 두고, True일 때 “들어올림/선택” 스테이트나 블렌드 스페이스로 전환.  
-     - 프리뷰 쪽에서는 **BAPlayerController**에 `SetPreviewPressed(Index, true/false)` 같은 API를 만들고, 내부에서 `PreviewActors[Index]->SetCharacter(Mesh, AnimBP)` 는 그대로 두고, **AnimBP만 바꾸거나** AnimBP 인스턴스에 변수만 설정.  
-     - 단, `SetCharacter`이 AnimBP 클래스 자체를 바꾸는 방식이면, “일반 Idle용 AnimBP”와 “Pressed용 AnimBP” 두 개를 데이터에 두고, 롱프레스 시에만 Pressed용 AnimBP로 `SetCharacter(Mesh, PressedAnimBP)` 호출하는 방식이 쉬움.
-  2. **캐릭터 데이터에 “Pressed용 AnimBP” 추가**  
-     - `FCharacterRow`에 `TSoftClassPtr<UAnimInstance> PreviewAnimBP_Pressed` 같은 필드를 추가하고, 롱프레스 시 해당 슬롯에 대해 `ActivatePreview`는 그대로 두되 **AnimBP만** Pressed용으로 바꾸는 `UpdatePreview(Index, Mesh, PressedAnimBP)` 호출.  
-     - 손을 떼거나 드롭 완료 시 다시 일반 `PreviewAnimBP`로 `UpdatePreview` 호출.
-- **플레이어 컨트롤러**  
-  - 지금 있는 `UpdatePreview(index, Mesh, AnimBP)` 만 있어도, “같은 Mesh, 다른 AnimBP”로 한 번 더 호출하면 “애니만 바꾼” 효과를 낼 수 있음.  
-  - 그래서 **위젯 → PC** 로 “이 슬롯 롱프레스 시작/해제” 알리면, PC가 해당 Index의 Mesh/현재 AnimBP를 알고 있을 테니, “Pressed 해제” 시 Idle용 AnimBP로 다시 `UpdatePreview` 호출하면 됨.
+- **채택 방식**: **하나의 AnimBP**에서 bool 변수(`bIsPressed`)로 Idle / Pressed 전환.
+- **C++**  
+  - `UBAPreviewCharacterAnimInstance`: `UAnimInstance` 서브클래스, `BlueprintReadWrite` bool `bIsPressed` 멤버.  
+  - 프리뷰용 AnimBP 블루프린트는 이 클래스를 **부모 클래스**로 지정.  
+  - `ABAPreviewCharacter::SetPreviewPressed(bool bPressed)`: `Skel->GetAnimInstance()`를 `UBAPreviewCharacterAnimInstance`로 캐스트 후 `bIsPressed` 설정.  
+  - `ABAPlayerController::SetPreviewSlotPressed(Index, bPressed)`: 해당 슬롯의 `PreviewActors[Index]->SetPreviewPressed(bPressed)` 호출.
+- **블루프린트 AnimBP**  
+  - `bIsPressed == true`일 때 “들어올림/선택” 스테이트 또는 블렌드 스페이스로 전환, `false`일 때 Idle로 전환하도록 그래프 구성.
 
 ### 3-3. 드래그로 0번·1번 스왑
 

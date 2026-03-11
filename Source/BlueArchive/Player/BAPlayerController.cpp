@@ -54,11 +54,16 @@ ABAPreviewCharacter* ABAPlayerController::EnsurePreviewActor(int32 index)
 	if (PreviewActors[index] && IsValid(PreviewActors[index])) return PreviewActors[index];
 	if (!PreviewActorClass) return nullptr;
 
+	// 서로 그림자/조명에 간섭하지 않도록, 인덱스별로 월드에서 충분히 떨어진 위치에 스폰
+	const float PreviewActorOffset = 10000.f;
+	const FVector BaseLocation(0.f, PreviewActorOffset * index, 0.f);
+	const FTransform SpawnTransform(FRotator::ZeroRotator, BaseLocation);
+
 	FActorSpawnParameters Params;
 	Params.Owner = this;
 	Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
-	PreviewActors[index] = GetWorld()->SpawnActor<ABAPreviewCharacter>(PreviewActorClass, FTransform::Identity, Params);
+	PreviewActors[index] = GetWorld()->SpawnActor<ABAPreviewCharacter>(PreviewActorClass, SpawnTransform, Params);
 	return PreviewActors[index];
 }
 
@@ -96,6 +101,14 @@ void ABAPlayerController::UpdatePreview(int32 index, USkeletalMesh* Mesh, TSubcl
 {
 	if (!PreviewActors[index] || !IsValid(PreviewActors[index])) return;
 	PreviewActors[index]->SetCharacter(Mesh, AnimBP);
+}
+
+void ABAPlayerController::SetPreviewSlotPressed(int32 Index, bool bPressed)
+{
+	if (!PreviewActors.IsValidIndex(Index) || !PreviewActors[Index] || !IsValid(PreviewActors[Index]))
+		return;
+	UE_LOG(LogTemp, Log, TEXT("[PC] SetPreviewSlotPressed Index=%d, bPressed=%s"), Index, bPressed ? TEXT("true") : TEXT("false"));
+	PreviewActors[Index]->SetPreviewPressed(bPressed);
 }
 
 void ABAPlayerController::LoadPreviewAssetsAsync(int32 Index, FName Id, TFunction<void(USkeletalMesh* LoadedMesh, TSubclassOf<UAnimInstance>LoadedAnimBP)> OnLoaded)

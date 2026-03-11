@@ -34,12 +34,17 @@ public:
 	void ClearPreview(int32 Index);
 	void UpdatePreview(int32 index, USkeletalMesh* Mesh, TSubclassOf<UAnimInstance> AnimBP);
 
+	/** 롱프레스 시 해당 슬롯 프리뷰 AnimInstance의 bIsPressed 설정 (단일 AnimBP 내에서 Idle/Pressed 전환) */
+	UFUNCTION(BlueprintCallable, Category = "Preview")
+	void SetPreviewSlotPressed(int32 Index, bool bPressed);
+
 private:
 	void LoadPreviewAssetsAsync(int32 Index, FName Id,
 		TFunction<void(USkeletalMesh* LoadedMesh, TSubclassOf<UAnimInstance> LoadedAnimBP)> OnLoaded);
 
 	UPROPERTY(VisibleAnywhere, Category = "UI")
 	TObjectPtr<UBAUIManager> BAUIManager;
+
 	UPROPERTY()
 	TArray<TObjectPtr<ABAPreviewCharacter>> PreviewActors;
 	UPROPERTY(EditDefaultsOnly, Category = "Preview|PP")

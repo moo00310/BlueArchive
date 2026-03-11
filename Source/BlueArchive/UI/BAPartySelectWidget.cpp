@@ -60,6 +60,9 @@ void UBAPartySelectWidget::NativeConstruct()
 			Panel->SetSlotIndex(Index);
 			Panel->OnLongPress.AddDynamic(this, &UBAPartySelectWidget::HandlePreviewSlotLongPress);
 			Panel->OnShortClick.AddDynamic(this, &UBAPartySelectWidget::HandlePreviewSlotShortClick);
+			Panel->OnSlotDropTarget.AddDynamic(this, &UBAPartySelectWidget::HandlePreviewSlotDropTarget);
+			Panel->OnPreviewSlotUnpressed.AddDynamic(this, &UBAPartySelectWidget::HandlePreviewSlotUnpressed);
+			Panel->OnPreviewDragStarted.AddDynamic(this, &UBAPartySelectWidget::HandlePreviewSlotDragStarted);
 			PreviewSlots[Index].Image = Panel->GetPreviewImage();
 		}
 		else if (InputWidget)
@@ -67,6 +70,8 @@ void UBAPartySelectWidget::NativeConstruct()
 			InputWidget->SetSlotIndex(Index);
 			InputWidget->OnLongPress.AddDynamic(this, &UBAPartySelectWidget::HandlePreviewSlotLongPress);
 			InputWidget->OnShortClick.AddDynamic(this, &UBAPartySelectWidget::HandlePreviewSlotShortClick);
+			InputWidget->OnPreviewSlotUnpressed.AddDynamic(this, &UBAPartySelectWidget::HandlePreviewSlotUnpressed);
+			InputWidget->OnDragStarted.AddDynamic(this, &UBAPartySelectWidget::HandlePreviewSlotDragStarted);
 			PreviewSlots[Index].Image = InputWidget->GetPreviewImage();
 		}
 		else
@@ -387,8 +392,31 @@ void UBAPartySelectWidget::HandlePopUpCharacterSelected(FName CharacterId)
 
 void UBAPartySelectWidget::HandlePreviewSlotLongPress(int32 SlotIndex)
 {
-	UE_LOG(LogBAPartyPreview, Log, TEXT("Preview slot long press: %d (애니 변경·드래그는 다음 단계에서)"), SlotIndex);
-	// TODO: 해당 슬롯 프리뷰 캐릭터 애니메이션 변경 + 드래그 가능 상태
+	if (SlotIndex < 0 || SlotIndex > 1) return;
+	// 롱프레스는 여전히 드래그 시작 트리거로 사용하지만,
+	// 프리뷰 애니메이션 전환은 실제 드래그 시작 시점(HandlePreviewSlotDragStarted)에서 처리.
+}
+
+void UBAPartySelectWidget::HandlePreviewSlotUnpressed(int32 SlotIndex)
+{
+	if (SlotIndex < 0 || SlotIndex > 1) return;
+	ABAPlayerController* PC = GetOwningPlayer<ABAPlayerController>();
+	if (PC)
+	{
+		UE_LOG(LogBAPartyPreview, Log, TEXT("[Widget] Unpressed Slot=%d -> Pressed=false"), SlotIndex);
+		PC->SetPreviewSlotPressed(SlotIndex, false);
+	}
+}
+
+void UBAPartySelectWidget::HandlePreviewSlotDragStarted(int32 SlotIndex)
+{
+	if (SlotIndex < 0 || SlotIndex > 1) return;
+	ABAPlayerController* PC = GetOwningPlayer<ABAPlayerController>();
+	if (PC)
+	{
+		UE_LOG(LogBAPartyPreview, Log, TEXT("[Widget] DragStarted Slot=%d -> Pressed=true"), SlotIndex);
+		PC->SetPreviewSlotPressed(SlotIndex, true);
+	}
 }
 
 void UBAPartySelectWidget::HandlePreviewSlotShortClick(int32 SlotIndex)
@@ -396,6 +424,21 @@ void UBAPartySelectWidget::HandlePreviewSlotShortClick(int32 SlotIndex)
 	if (SlotIndex < 0 || SlotIndex >= MaxMembersPerParty) return;
 	SelectedSlotIndex = SlotIndex;
 	OpenSlotPopup();
+}
+
+void UBAPartySelectWidget::HandlePreviewSlotDropTarget(int32 FromSlotIndex, int32 ToSlotIndex)
+{
+	if (FromSlotIndex < 0 || FromSlotIndex > 1 || ToSlotIndex < 0 || ToSlotIndex > 1 || FromSlotIndex == ToSlotIndex)
+		return;
+	while (DisplayPartyIds.Num() < 2)
+		DisplayPartyIds.Add(NAME_None);
+
+	Swap(DisplayPartyIds[FromSlotIndex], DisplayPartyIds[ToSlotIndex]);
+	RefreshPreviewSlot(0);
+	RefreshPreviewSlot(1);
+	RefreshPartySlots();
+	SavePartyToSubsystem();
+	UE_LOG(LogBAPartyPreview, Log, TEXT("Preview slot swap: %d <-> %d"), FromSlotIndex, ToSlotIndex);
 }
 
 void UBAPartySelectWidget::HandlePartyConfirmed(TArray<FName> PartyIds)
