@@ -28,6 +28,12 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void RequestShowScreen(EUIScreen ScreenType);
 
+	UFUNCTION(BlueprintCallable, Category = "UI|Navigation")
+	void RequestGoBack();
+
+	UFUNCTION(BlueprintPure, Category = "UI|Navigation")
+	bool CanGoBack() const;
+
 	ABAPreviewCharacter* EnsurePreviewActor(int32 index);
 	void ReleasePreviewActor();
 	void ActivatePreview(FName Id, int32 index, UTextureRenderTarget2D* ViewRT, UTextureRenderTarget2D* MaskRT);

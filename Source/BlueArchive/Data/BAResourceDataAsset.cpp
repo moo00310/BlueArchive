@@ -1,4 +1,4 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
+// Fill out your copyright notice in the Description page of Project Settings.
 
 #include "Data/BAResourceDataAsset.h"
 #include "Save/BAResourceSaveGame.h"
@@ -11,7 +11,6 @@ void UBAResourceDataAsset::SaveToSaveGame(const FString& SlotName, int32 UserInd
 
 	if (!SaveGame)
 	{
-		UE_LOG(LogTemp, Error, TEXT("BAResourceDataAsset: SaveGame 생성 실패"));
 		return;
 	}
 
@@ -20,17 +19,13 @@ void UBAResourceDataAsset::SaveToSaveGame(const FString& SlotName, int32 UserInd
 	SaveGame->UserLevel = UserLevel;
 	SaveGame->UserName = UserName;
 
-	if (!UGameplayStatics::SaveGameToSlot(SaveGame, SlotName, UserIndex))
-	{
-		UE_LOG(LogTemp, Error, TEXT("BAResourceDataAsset: SaveGame 저장 실패"));
-	}
+	UGameplayStatics::SaveGameToSlot(SaveGame, SlotName, UserIndex);
 }
 
 void UBAResourceDataAsset::LoadFromSaveGame(const FString& SlotName, int32 UserIndex)
 {
 	if (!UGameplayStatics::DoesSaveGameExist(SlotName, UserIndex))
 	{
-		UE_LOG(LogTemp, Warning, TEXT("BAResourceDataAsset: SaveGame이 존재하지 않음 - Slot: %s"), *SlotName);
 		return;
 	}
 
@@ -39,7 +34,6 @@ void UBAResourceDataAsset::LoadFromSaveGame(const FString& SlotName, int32 UserI
 
 	if (!SaveGame)
 	{
-		UE_LOG(LogTemp, Error, TEXT("BAResourceDataAsset: SaveGame 로드 실패"));
 		return;
 	}
 

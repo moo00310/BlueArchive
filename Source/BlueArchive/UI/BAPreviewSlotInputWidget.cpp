@@ -28,7 +28,6 @@ FReply UBAPreviewSlotInputWidget::NativeOnMouseButtonDown(const FGeometry& InGeo
 	// 혹시 이전 입력 사이클에서 Pressed 상태가 남아 있으면 먼저 해제 신호를 보냄
 	if (bPressedActive)
 	{
-		UE_LOG(LogTemp, Log, TEXT("[Input] MouseDown Slot=%d: bPressedActive was true, force Unpressed"), SlotIndex);
 		bPressedActive = false;
 		OnPreviewSlotUnpressed.Broadcast(SlotIndex);
 	}
@@ -69,12 +68,6 @@ FReply UBAPreviewSlotInputWidget::NativeOnMouseButtonUp(const FGeometry& InGeome
 		World->GetTimerManager().ClearTimer(LongPressTimerHandle);
 	}
 
-	UE_LOG(LogTemp, Log, TEXT("[Input] MouseUp Slot=%d: bLongPressTriggered=%s, bDragStarted=%s, bPressedActive=%s"),
-		SlotIndex,
-		bLongPressTriggered ? TEXT("true") : TEXT("false"),
-		bDragStarted ? TEXT("true") : TEXT("false"),
-		bPressedActive ? TEXT("true") : TEXT("false"));
-
 	if (!bLongPressTriggered)
 	{
 		OnShortClick.Broadcast(SlotIndex);
@@ -82,7 +75,6 @@ FReply UBAPreviewSlotInputWidget::NativeOnMouseButtonUp(const FGeometry& InGeome
 	else
 	{
 		bPressedActive = false;
-		UE_LOG(LogTemp, Log, TEXT("[Input] MouseUp Slot=%d: Broadcast Unpressed"), SlotIndex);
 		OnPreviewSlotUnpressed.Broadcast(SlotIndex);
 	}
 
@@ -98,7 +90,6 @@ void UBAPreviewSlotInputWidget::OnLongPressTimerElapsed()
 {
 	bLongPressTriggered = true;
 	bPressedActive = true;
-	UE_LOG(LogTemp, Log, TEXT("[Input] LongPressElapsed Slot=%d: bPressedActive=true"), SlotIndex);
 	OnLongPress.Broadcast(SlotIndex);
 }
 
@@ -152,7 +143,6 @@ void UBAPreviewSlotInputWidget::HandleDragOperationEnd(UDragDropOperation* Opera
 	{
 		SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 		bPressedActive = false;
-		UE_LOG(LogTemp, Log, TEXT("[Input] DragEnd Slot=%d: Broadcast Unpressed"), SlotIndex);
 		OnPreviewSlotUnpressed.Broadcast(SlotIndex);
 	}
 }

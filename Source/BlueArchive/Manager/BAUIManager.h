@@ -27,6 +27,18 @@ public:
 	void ShowScreen(EUIScreen ScreenType);
 	void HandleScreenChanged(EUIScreen Prev, EUIScreen Next);
 
+	UFUNCTION(BlueprintCallable, Category = "UI|Navigation")
+	void GoBack();
+
+	UFUNCTION(BlueprintPure, Category = "UI|Navigation")
+	bool CanGoBack() const;
+
+	UFUNCTION(BlueprintPure, Category = "UI|Navigation")
+	EUIScreen GetCurrentScreen() const { return curScreenType; }
+
+	UFUNCTION(BlueprintPure, Category = "UI|Navigation")
+	EUIScreen GetPrevScreen() const { return PrevScreenType; }
+
 	UPROPERTY(EditDefaultsOnly, Category = "UI|Screen")
 	TMap<EUIScreen, TSoftClassPtr<UBAUserWidget>> mapScreenClasses;
 	UPROPERTY(EditDefaultsOnly, Category = "UI|Fade")

@@ -1,0 +1,84 @@
+================================================================================
+ BlueArchive 프로젝트 - 포트폴리오 어필 포인트 (전체 프로젝트 기준)
+================================================================================
+
+■ 1. UI 화면 전환 시스템 (UIManager + ScreenCover + 비동기 로드)
+--------------------------------------------------------------------------------
+- UBAUIManager (ActorComponent, PlayerController 소유): EUIScreen enum으로 화면 타입을 관리하고, 
+  mapScreenClasses에 TSoftClassPtr로 위젯 클래스를 보관해 필요 시 비동기 로드(UAssetManager::RequestAsyncLoad) 후 생성합니다.
+- 화면 전환 시 bIsTransitioning으로 중복 전환을 막고, ShouldUseFade(Prev, Next)에 따라 Main→Contents는 
+  MainAnimWidget(페이드 애니메이션), 그 외는 BlackWidget으로 전환하여 시각적 피드백을 구분했습니다.
+- UBAScreenCoverWidget: FadeOut 애니메이션 바인딩, EScreenCoverFinishPolicy(애니 종료/로딩 대기), 
+  FFadeFinished 델리게이트로 전환 완료를 알립니다.
+- TrySwitchScreen()에서 bFadeOutFinished와 bScreenLoaded가 모두 true일 때만 이전 화면 제거·새 화면 생성·PlayInAnim 호출·OnScreenChanged 브로드캐스트로, 
+  페이드와 비동기 로드가 끝난 뒤에만 실제 전환이 일어나도록 설계했습니다.
+- SELECT 화면에서 나갈 때 HandleScreenChanged에서 ReleasePreviewActor()로 프리뷰 액터를 정리하는 등, 화면별 라이프사이클을 한 곳에서 처리합니다.
+
+
+■ 2. 파티 슬롯 입력·드래그·드롭 및 프리뷰 연동 (전체 플로우)
+--------------------------------------------------------------------------------
+- UBAPreviewSlotInputWidget: 마우스 다운 시 롱프레스 타이머(FTimerManager) 시작, DetectDrag로 드래그 감지. 
+  업 시 짧은 클릭(OnShortClick) / 롱프레스 후 해제(OnPreviewSlotUnpressed) 구분. 
+  bLongPressTriggered, bDragStarted, bPressedActive로 입력 상태를 명확히 해 꼬임을 방지했습니다.
+- NativeOnDragDetected에서 UBAPartySlotDragDropOperation 생성, SourceSlotIndex 전달, WidgetTree로 런타임에 
+  USizeBox+UImage 생성해 프리뷰 이미지 복사·반투명·확대 비주얼을 붙이고, 원본 슬롯은 Collapsed. 
+  드롭/취소 시 HandleDragOperationEnd에서 다시 표시 및 Unpressed 브로드캐스트.
+- NativeOnDrop에서 같은 슬롯·비허용 조합 무시, 슬롯 0↔1 간만 OnDropReceived로 스왑 허용.
+- UBAPreviewSlotPanelWidget: Input 위젯 + 캐릭터 정보 + SDF Deco를 묶어 LongPress/ShortClick/DropTarget/Unpressed/DragStarted를 상위로 전달.
+- UBAPartySelectWidget: 프리셋 4개×멤버 3명, DisplayPartyIds/CurrentPresetIndex/SelectedSlotIndex, 
+  서브시스템에서 파티 로드·저장·프리셋 전환, Make_RT로 Color/Mask RT 생성, InitPreviewSlot/RefreshPreviewSlot으로 
+  프리뷰 슬롯 2개(이미지·RT·UIMID) 초기화·갱신, 드래그 스왑 시 슬롯 교환 처리. 
+  라디오(UBAPartySelectWidget), 슬롯 클릭 시 OpenSlotPopup → UBASelectPopUpWidget에서 캐릭터 선택 후 파티 반영.
+
+
+■ 3. 데이터 주도 캐릭터/파티 시스템 (Subsystem + Save + 리스트/팝업 UI)
+--------------------------------------------------------------------------------
+- UBACharacterDataSubsystem (GameInstanceSubsystem): 
+  정적 데이터는 DataTable(FCharacterRow: DisplayName, Attack/Defense/Position 타입, Base 스탯, Portrait/PreviewMesh/PreviewAnimBP Soft 참조)에서 로드, 
+  GetCharacterDefinition/GetName/BaseStats/GetAllCharacterIds 제공. 
+  동적 데이터는 UBACharacterSaveGame(TMap<FName, FOwnedCharacter>)로 보유 캐릭터(레벨, 경험치, 성급) 저장/로드, AddOrUpdate, SetLevel/Exp/Star, SaveNow. 
+  파티는 UBAPartySaveGame으로 프리셋 4개×각 3명(FPartyPreset) 저장, GetPartyPreset/SetPartyPreset. 
+  Get(WorldContext) 정적 헬퍼로 어디서든 서브시스템 접근, GetCharacterPreviewAsset로 메시/AnimBP Soft 참조 반환.
+- UBACharacterListWidget: SetCharacterIds(TArray<FName>) 호출 시 UniformGridPanel 자식 제거 후 Portrait 위젯 클래스로 그리드 동적 생성, 
+  ColumnsPerRow/SlotPadding/MinSlotHeight/MinSlotWidth 설정 가능, 클릭 시 OnCharacterSelected 브로드캐스트.
+- UBACharacterPortraitWidget: CharacterId 설정, 표시 이름·RefreshAppearance(이미지 등), OnPortraitClicked 브로드캐스트.
+- UBASelectPopUpWidget: CharacterList + 파티 슬롯 3개, OnCharacterSelected/OnPartyConfirmed 델리게이트, 리스트 ID 설정·현재 파티 ID 설정/확인/저장·슬롯별 추가·제거·클리어.
+- UBAResourceSubsystem: 재화 Get/Add/Spend/Set, SaveNow, OnResourceChanged/OnUserLevelChanged/OnUserNameChanged. 
+  UBAResourceDataAsset으로 기본값, UBAResourceSaveGame으로 직렬화. 
+  UBASDFValueLabelWidget이 ResourceType별 구독 후 텍스트 자동 갱신(크레딧, 에너지 N/Max, 유저 레벨/이름 등).
+
+
+■ 4. 캐릭터 프리뷰 렌더 파이프라인 (SceneCapture + 스텐실 + 바운즈)
+--------------------------------------------------------------------------------
+- ABAPreviewCharacter: USkeletalMeshComponent + SceneCaptureComponent2D 두 개(CaptureColor, CaptureMask). 
+  Init(Mesh, ViewRT, MaskRT), SetCharacter(NewMesh, NewAnimBP), SetRenderTargets(ColorRT, MaskRT), 
+  UpdateCaptureByMeshBounds()로 메쉬 바운즈 반지름×PreviewBoundsRadiusScale으로 캡처 위치/거리 자동 조정해 캐릭터 크기별로 프레임 맞춤.
+  SetPreviewPressed(bPressed)로 프리뷰 전용 AnimInstance(bIsPressed)에 Idle/Pressed 블렌드 연동.
+  PP_StencilToAlpha_Mat/MID로 마스크를 알파로 변환해 UI 머티리얼에서 활용, StencilValue로 선택적 마스킹.
+- ABAPlayerController: EnsurePreviewActor(index)로 인덱스별 오프셋(10000.f) 위치에 스폰해 서로 간섭 없음, 
+  ActivatePreview/ClearPreview/UpdatePreview, 서브시스템에서 GetCharacterPreviewAsset으로 Soft 로드 후 Init/SetCharacter 호출, 
+  SetPreviewSlotPressed로 슬롯별 Pressed 상태 전달. ReleasePreviewActor로 SELECT 화면 이탈 시 정리.
+- 전체 흐름: 파티 선택 UI → 슬롯별 RT/Material 할당 → Controller가 프리뷰 액터 스폰·비동기 로드 → Init/SetCharacter/SetRenderTargets/UpdateCaptureByMeshBounds → 
+  스텐실 후처리로 UI용 텍스처 생성 → 롱프레스/드래그 시 SetPreviewSlotPressed로 애니 반영.
+
+
+■ 5. 그 외 UI 컴포넌트 (SDF·배너·마우스 FX·공통 베이스)
+--------------------------------------------------------------------------------
+- UBAUserWidget: 공통 베이스. GetCachedPlayerController(), GetSubsystem<T>(), PlayInAnim(), FadeIn 애니메이션 바인딩.
+- UBAUser_SDF_DecoWidget: 파티 슬롯용 SDF 스타일 장식. 이름·레벨·성급·포지션·공격/방어 타입 아이콘, SetCharacterId/RefreshCharacterData, 
+  NativePaint 오버라이드로 커스텀 페인트(SDF 패널). OnSlotClicked, SlotIndex.
+- UBAUser_SDFWidget: SDF 공용 위젯(HalfSize, TintStrength, ColorAdd, Material 동기화).
+- UBABannerWidget: 이벤트/픽업 배너 캐러셀. TMap<EUIEventBanner, TSoftObjectPtr<UTexture2D>>로 텍스처 비동기 로드, 
+  Prev/Curr/Next 이미지, MinDragDistance/ClickMaxDistance/fClipingDistance로 드래그 vs 클릭 구분, 
+  슬라이드 상태(SILDESTATE), 인디케이터 점, OnBannerClicked BP 이벤트. SlideToNext/SlideToPrev.
+- IBAMouseFXInterface: InitializeFX(UCanvasPanel*), UpdateFX(FMouseFXFrame). 
+  UBAMouseFXRootWidget가 Tick에서 FMouseFXFrame(위치, Down/JustPressed/JustReleased/Click, DeltaTime) 채워 등록된 Trail/Touch에 전달. 
+  UBAMouseTrailWidget: 세그먼트 풀링(MaxPoolSize), SegmentSpacing/Thickness/LifeTime, Material로 세그먼트 그리기, 
+  UBAMouseTouchFXWidget: 클릭/터치 링 이펙트 풀. UIManager에서 MouseFXRoot를 최상단 뷰포트(ZOrder 2000)에 올려 전 화면 공통 FX.
+- UBAUserWidgetRadio: 프리셋 1~4 버튼 라디오. SetSelectedIndex/GetSelectedIndex, OnSelectionChanged 브로드캐스트, 선택 시 비주얼/텍스트 스타일.
+
+
+================================================================================
+ 요약: 화면 전환·비동기 로드, 슬롯 입력/드래그/프리뷰 연동, DataTable+SaveGame+Subsystem 기반 데이터 파이프라인, 
+       프리뷰용 SceneCapture+스텐실 후처리, SDF/배너/마우스 FX 등 재사용 가능한 UI 컴포넌트까지 프로젝트 전반을 포괄해 정리했습니다.
+================================================================================

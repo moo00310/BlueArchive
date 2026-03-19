@@ -94,7 +94,7 @@ public:
     void AddOrUpdateOwnedCharacter(const FOwnedCharacter& Character);
 
     /**
-     * 캐릭터 ID만으로 보유 추가 (레벨1/성급1 기본). 블루프린트·테스트용.
+     * 캐릭터 ID만으로 보유 추가 (레벨1/성급1 기본). 블루프린트 편의 함수.
      * DataTable RowName을 넘기면 해당 캐릭터가 보유 목록에 들어가고 UI에 표시됨.
      */
     UFUNCTION(BlueprintCallable, Category = "Character|Owned", meta = (DisplayName = "Add Owned Character By Id"))

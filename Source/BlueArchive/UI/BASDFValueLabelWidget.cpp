@@ -91,7 +91,7 @@ void UBASDFValueLabelWidget::UpdateDisplay()
 		break;
 	case EResourceType::UserInfo:
 		// 유저 정보: "Level / Name"
-		FormattedText = FText::FromString(FString::Printf(TEXT("%d  %s"),
+		FormattedText = FText::FromString(FString::Printf(TEXT("Level : %d  %s"),
 			ResourceSubsystem->GetUserLevel(), *ResourceSubsystem->GetUserName()));
 		break;
 	default:

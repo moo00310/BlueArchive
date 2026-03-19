@@ -73,6 +73,19 @@ void ABAPlayerController::RequestShowScreen(EUIScreen ScreenType)
 		BAUIManager->ShowScreen(ScreenType);
 }
 
+void ABAPlayerController::RequestGoBack()
+{
+	if (BAUIManager)
+	{
+		BAUIManager->GoBack();
+	}
+}
+
+bool ABAPlayerController::CanGoBack() const
+{
+	return BAUIManager && BAUIManager->CanGoBack();
+}
+
 void ABAPlayerController::ActivatePreview(FName Id, int32 index ,UTextureRenderTarget2D* ViewRT, UTextureRenderTarget2D* MaskRT)
 {
 	if (!ViewRT || !MaskRT) return;
@@ -107,7 +120,6 @@ void ABAPlayerController::SetPreviewSlotPressed(int32 Index, bool bPressed)
 {
 	if (!PreviewActors.IsValidIndex(Index) || !PreviewActors[Index] || !IsValid(PreviewActors[Index]))
 		return;
-	UE_LOG(LogTemp, Log, TEXT("[PC] SetPreviewSlotPressed Index=%d, bPressed=%s"), Index, bPressed ? TEXT("true") : TEXT("false"));
 	PreviewActors[Index]->SetPreviewPressed(bPressed);
 }
 

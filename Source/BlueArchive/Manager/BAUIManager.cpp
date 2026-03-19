@@ -1,8 +1,9 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
+// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "Manager/BAUIManager.h"
 #include "Player/BAPlayerController.h"
+#include "Game/BAGameInstance.h"
 #include "UI/BAScreenCoverWidget.h"
 #include "UI/BAMouseFXRootWidget.h"
 
@@ -36,10 +37,6 @@ void UBAUIManager::BeginPlay()
 		if (MouseFXRootWidget)
 		{
 			MouseFXRootWidget->AddToViewport(2000);
-		}
-		else
-		{
-			UE_LOG(LogTemp, Error, TEXT("BAUIManager: MouseFXRootWidget Fail"));
 		}
 	}
 
@@ -181,4 +178,25 @@ void UBAUIManager::HandleScreenChanged(EUIScreen Prev, EUIScreen Next)
 		if (Prev == EUIScreen::SELECT)
 			BAPC->ReleasePreviewActor();
 	}
+
+	if (Next == EUIScreen::MAIN)
+	{
+		if (UBAGameInstance* BAGameInstance = OwningPC ? Cast<UBAGameInstance>(OwningPC->GetGameInstance()) : nullptr)
+		{
+			BAGameInstance->PlayMainLobbyBGM();
+		}
+	}
+}
+
+void UBAUIManager::GoBack()
+{
+	if (!CanGoBack())
+		return;
+
+	ShowScreen(PrevScreenType);
+}
+
+bool UBAUIManager::CanGoBack() const
+{
+	return PrevScreenType != EUIScreen::END && !bIsTransitioning;
 }

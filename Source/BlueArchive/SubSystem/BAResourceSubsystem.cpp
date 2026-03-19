@@ -1,4 +1,4 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
+// Fill out your copyright notice in the Description page of Project Settings.
 
 #include "SubSystem/BAResourceSubsystem.h"
 #include "Save/BAResourceSaveGame.h"
@@ -28,24 +28,8 @@ void UBAResourceSubsystem::Initialize(FSubsystemCollectionBase& Collection)
                 {
                     SetDefaultResourceDataAsset(GameData->DefaultResourceDataAsset.Get());
                 }
-                else
-                {
-                    UE_LOG(LogTemp, Warning, TEXT("BAResourceSubsystem: DefaultResourceDataAsset 로드 실패"));
-                }
-            }
-            else
-            {
-                UE_LOG(LogTemp, Warning, TEXT("BAResourceSubsystem: GameData에 DefaultResourceDataAsset 미설정"));
             }
         }
-        else
-        {
-            UE_LOG(LogTemp, Warning, TEXT("BAResourceSubsystem: GameInstance에 GameData 에셋 미할당"));
-        }
-    }
-    else
-    {
-        UE_LOG(LogTemp, Warning, TEXT("BAResourceSubsystem: GameInstance가 BAGameInstance가 아님"));
     }
 
     LoadOrCreate();
@@ -95,7 +79,6 @@ void UBAResourceSubsystem::LoadOrCreate()
     else
     {
         EnsureDefaultResources();
-        UE_LOG(LogTemp, Warning, TEXT("BAResourceSubsystem: DefaultResourceDataAsset 미설정"));
     }
 
     UGameplayStatics::SaveGameToSlot(SaveData, SlotName, UserIndex);

@@ -104,7 +104,6 @@ const FCharacterRow* UBACharacterDataSubsystem::FindCharacterRow(FName Character
 {
     if (!CharacterDataTable)
     {
-        UE_LOG(LogTemp, Warning, TEXT("BACharacterDataSubsystem: CharacterDataTable이 설정되지 않았습니다!"));
         return nullptr;
     }
 
@@ -118,7 +117,6 @@ const FCharacterRow* UBACharacterDataSubsystem::FindCharacterRow(FName Character
 
     if (!RowPtr)
     {
-        UE_LOG(LogTemp, Warning, TEXT("BACharacterDataSubsystem: 캐릭터 ID '%s'를 찾을 수 없습니다."), *CharacterId.ToString());
         return nullptr;
     }
 
@@ -146,7 +144,6 @@ void UBACharacterDataSubsystem::LoadOrCreate()
     
     if (!SaveData)
     {
-        UE_LOG(LogTemp, Error, TEXT("BACharacterDataSubsystem: SaveGame 생성 실패"));
         return;
     }
 
@@ -297,11 +294,6 @@ void UBACharacterDataSubsystem::LoadPartyOrCreate()
     if (PartySaveData)
     {
         PartySaveData->PartyPresets.SetNum(MaxPartyPresets);
-        // 프리셋별로 다른 테스트 데이터 (전환 시 구분되도록)
-        PartySaveData->PartyPresets[0].CharacterIds = { "CHR_001", "CHR_002", "CHR_003" };
-        PartySaveData->PartyPresets[1].CharacterIds = { "CHR_001", "CHR_002", "CHR_000" };
-        PartySaveData->PartyPresets[2].CharacterIds = { "CHR_001", "CHR_000", "CHR_000" };
-        PartySaveData->PartyPresets[3].CharacterIds = { "CHR_000", "CHR_000", "CHR_000" };
         UGameplayStatics::SaveGameToSlot(PartySaveData, PartySlotName, UserIndex);
     }
 }
