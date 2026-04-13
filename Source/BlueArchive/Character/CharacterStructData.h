@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Engine/DataTable.h"
+#include "Engine/Texture2D.h"
 #include "CharacterEnumTypes.h"
 #include "CharacterStructData.generated.h"
 
@@ -27,8 +28,6 @@ struct FCharacterRow : public FTableRowBase
 {
     GENERATED_BODY()
 
-    // º¸ÅëÀº RowName ÀÚÃ¼¸¦ ID·Î ¾²´Ï±î, ±»ÀÌ CharacterId ÇÊµå´Â ¾ø¾îµµ µÊ.
-    // ³Ö°í ½ÍÀ¸¸é À¯ÁöÇØµµ µÇÁö¸¸, RowName°ú Áßº¹ °ü¸®°¡ »ı±è.
     UPROPERTY(EditAnywhere, BlueprintReadOnly)
     FText DisplayName;
 
@@ -39,11 +38,20 @@ struct FCharacterRow : public FTableRowBase
     EDefenseType DefenseType;
 
     UPROPERTY(EditAnywhere, BlueprintReadOnly)
+    EPosRoleType PositionType;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly)
     FBaseStats Base;
 
-    // ³ªÁß¿¡ ÇÊ¿äÇÏ¸é Soft ¸®¼Ò½º Ãß°¡
-    // UPROPERTY(EditAnywhere, BlueprintReadOnly)
-    // TSoftObjectPtr<UTexture2D> Portrait;
+    /** ì´ˆìƒí™” í…ìŠ¤ì²˜. DataTable Rowë§ˆë‹¤ ì—ë””í„°ì—ì„œ ì§€ì •. Soft ì°¸ì¡°. */
+    UPROPERTY(EditAnywhere, BlueprintReadOnly)
+    TSoftObjectPtr<UTexture2D> Portrait;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly)
+    TSoftObjectPtr<USkeletalMesh> PreviewMesh;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly)
+    TSoftClassPtr<UAnimInstance> PreviewAnimBP;
 };
 
 USTRUCT(BlueprintType)
@@ -51,7 +59,6 @@ struct FOwnedCharacter
 {
     GENERATED_BODY()
 
-    // DefinitionÀ» °¡¸®Å°´Â Å°(RowName)
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     FName CharacterId = NAME_None;
 
@@ -64,8 +71,5 @@ struct FOwnedCharacter
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     int32 Star = 1;
 
-    // ¼±ÅÃ: °­È­, Àåºñ, ½ºÅ³ ·¹º§ µî
-    // UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    // int32 WeaponLevel = 1;
 };
 

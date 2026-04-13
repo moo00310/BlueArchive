@@ -56,7 +56,6 @@ void UBAMouseTrailWidget::InitializeSegmentPool(UCanvasPanel* InCanvas, int32 Po
 {
 	if (!InCanvas)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("BAMouseTrailWidget: Root가 CanvasPanel이 아닙니다."));
 		return;
 	}
 
@@ -95,14 +94,6 @@ void UBAMouseTrailWidget::InitializeSegmentPool(UCanvasPanel* InCanvas, int32 Po
 				{
 					Segment.ImageWidget->SetBrushFromMaterial(Segment.MID);
 				}
-				else
-				{
-					UE_LOG(LogTemp, Warning, TEXT("BAMouseTrailWidget: Segment %d에 Material 생성 실패"), i);
-				}
-			}
-			else
-			{
-				UE_LOG(LogTemp, Warning, TEXT("BAMouseTrailWidget: TrailMaterial이 NULL입니다! Widget Blueprint에서 Material을 할당해주세요."));
 			}
 
 			// 회전 기준점을 중앙으로

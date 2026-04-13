@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 #include "UI/BASDFValueLabelWidget.h"
 #include "SubSystem/BAResourceSubsystem.h"
@@ -91,7 +91,7 @@ void UBASDFValueLabelWidget::UpdateDisplay()
 		break;
 	case EResourceType::UserInfo:
 		// 유저 정보: "Level / Name"
-		FormattedText = FText::FromString(FString::Printf(TEXT("%d  %s"),
+		FormattedText = FText::FromString(FString::Printf(TEXT("Level : %d  %s"),
 			ResourceSubsystem->GetUserLevel(), *ResourceSubsystem->GetUserName()));
 		break;
 	default:

@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -14,6 +14,7 @@ enum class EUIScreen : uint8
 {
 	MAIN    UMETA(DisplayName = "Main"),
 	CONTENTS  UMETA(DisplayName = "Contents"),
+	SELECT  UMETA(DisplayName = "Select"),
 	BATTLE  UMETA(DisplayName = "Battle"),
 	END      UMETA(Hidden)
 };

@@ -4,6 +4,7 @@
 #include "Save/BAResourceSaveGame.h"
 #include "Data/BAResourceDataAsset.h"
 #include "Game/BAGameInstance.h"
+#include "Game/BAGameDataAsset.h"
 #include "Kismet/GameplayStatics.h"
 #include "Misc/Paths.h"
 #include "TimerManager.h"
@@ -12,32 +13,23 @@ void UBAResourceSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
     Super::Initialize(Collection);
 
-    // GameInstance에서 Data Asset 참조 가져오기 (Init() 순서에 의존하지 않음)
+    // GameData 에셋에서 기본 리소스 에셋 참조 가져오기
     if (UBAGameInstance* BAGI = Cast<UBAGameInstance>(GetGameInstance()))
     {
-        if (!BAGI->DefaultResourceDataAsset.IsNull())
+        if (UBAGameDataAsset* GameData = BAGI->GameData)
         {
-            if (!BAGI->DefaultResourceDataAsset.IsValid())
+            if (!GameData->DefaultResourceDataAsset.IsNull())
             {
-                BAGI->DefaultResourceDataAsset.LoadSynchronous();
-            }
-            if (BAGI->DefaultResourceDataAsset.IsValid())
-            {
-                SetDefaultResourceDataAsset(BAGI->DefaultResourceDataAsset.Get());
-            }
-            else
-            {
-                UE_LOG(LogTemp, Warning, TEXT("BAResourceSubsystem: DefaultResourceDataAsset 로드 실패"));
+                if (!GameData->DefaultResourceDataAsset.IsValid())
+                {
+                    GameData->DefaultResourceDataAsset.LoadSynchronous();
+                }
+                if (GameData->DefaultResourceDataAsset.IsValid())
+                {
+                    SetDefaultResourceDataAsset(GameData->DefaultResourceDataAsset.Get());
+                }
             }
         }
-        else
-        {
-            UE_LOG(LogTemp, Warning, TEXT("BAResourceSubsystem: DefaultResourceDataAsset 미설정"));
-        }
-    }
-    else
-    {
-        UE_LOG(LogTemp, Warning, TEXT("BAResourceSubsystem: GameInstance가 BAGameInstance가 아님"));
     }
 
     LoadOrCreate();
@@ -67,10 +59,18 @@ void UBAResourceSubsystem::LoadOrCreate()
     if (UGameplayStatics::DoesSaveGameExist(SlotName, UserIndex))
     {
         SaveData = Cast<UBAResourceSaveGame>(UGameplayStatics::LoadGameFromSlot(SlotName, UserIndex));
-        
+
         if (SaveData)
         {
             EnsureDefaultResources();
+
+            // 기존 세이브에 UID가 없으면 신규 발급 (구버전 세이브 대응)
+            if (SaveData->PlayerUID.IsEmpty())
+            {
+                SaveData->PlayerUID = FGuid::NewGuid().ToString(EGuidFormats::DigitsWithHyphens);
+                UGameplayStatics::SaveGameToSlot(SaveData, SlotName, UserIndex);
+            }
+
             bDirty = false;
             return;
         }
@@ -87,8 +87,10 @@ void UBAResourceSubsystem::LoadOrCreate()
     else
     {
         EnsureDefaultResources();
-        UE_LOG(LogTemp, Warning, TEXT("BAResourceSubsystem: DefaultResourceDataAsset 미설정"));
     }
+
+    // 신규 세이브: UID 최초 발급
+    SaveData->PlayerUID = FGuid::NewGuid().ToString(EGuidFormats::DigitsWithHyphens);
 
     UGameplayStatics::SaveGameToSlot(SaveData, SlotName, UserIndex);
 
@@ -193,6 +195,11 @@ int32 UBAResourceSubsystem::GetUserLevel() const
 FString UBAResourceSubsystem::GetUserName() const
 {
     return SaveData ? SaveData->UserName : TEXT("");
+}
+
+FString UBAResourceSubsystem::GetPlayerUID() const
+{
+    return SaveData ? SaveData->PlayerUID : TEXT("");
 }
 
 void UBAResourceSubsystem::SetUserLevel(int32 Level)

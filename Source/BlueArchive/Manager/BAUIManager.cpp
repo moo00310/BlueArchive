@@ -2,6 +2,8 @@
 
 
 #include "Manager/BAUIManager.h"
+#include "Player/BAPlayerController.h"
+#include "Game/BAGameInstance.h"
 #include "UI/BAScreenCoverWidget.h"
 #include "UI/BAMouseFXRootWidget.h"
 
@@ -36,11 +38,10 @@ void UBAUIManager::BeginPlay()
 		{
 			MouseFXRootWidget->AddToViewport(2000);
 		}
-		else
-		{
-			UE_LOG(LogTemp, Error, TEXT("BAUIManager: MouseFXRootWidget Fail"));
-		}
 	}
+
+
+	OnScreenChanged.AddUObject(this, &UBAUIManager::HandleScreenChanged);
 }
 
 void UBAUIManager::ShowScreen_TSubclassOf(EUIScreen ScreenType)
@@ -75,15 +76,13 @@ void UBAUIManager::ShowScreen(EUIScreen ScreenType)
 
 	bIsTransitioning = true;
 
-	EUIScreen PrevScreen = curScreenType;
+	PrevScreenType = curScreenType;
 	curScreenType = ScreenType;
 
 	PreloadNextScreen();
 
-	if (ShouldUseFade(PrevScreen, ScreenType))
+	if (ShouldUseFade(PrevScreenType, ScreenType))
 	{
-		
-
 		MainAnimWidget->SetVisibility(ESlateVisibility::Visible);
 		MainAnimWidget->PlayFadeOut();
 	}
@@ -153,7 +152,6 @@ void UBAUIManager::TrySwitchScreen()
 		CurrentScreen = nullptr;
 	}
 
-
 	// New Screen
 	const TSoftClassPtr<UBAUserWidget>& SoftClass =
 		mapScreenClasses[curScreenType];
@@ -161,10 +159,44 @@ void UBAUIManager::TrySwitchScreen()
 	CurrentScreen = CreateWidget<UBAUserWidget>(OwningPC, SoftClass.Get());
 	CurrentScreen->AddToViewport(0);
 	CurrentScreen->PlayInAnim();
-
+	OnScreenChanged.Broadcast(PrevScreenType, curScreenType);
 }
 
 bool UBAUIManager::ShouldUseFade(EUIScreen pre, EUIScreen next)
 {
 	return pre == EUIScreen::MAIN && next == EUIScreen::CONTENTS;
+}
+
+void UBAUIManager::HandleScreenChanged(EUIScreen Prev, EUIScreen Next)
+{
+	if (!OwningPC) return;
+
+	ABAPlayerController* BAPC = Cast<ABAPlayerController>(OwningPC);
+
+	if (BAPC)
+	{
+		if (Prev == EUIScreen::SELECT)
+			BAPC->ReleasePreviewActor();
+	}
+
+	if (Next == EUIScreen::MAIN)
+	{
+		if (UBAGameInstance* BAGameInstance = OwningPC ? Cast<UBAGameInstance>(OwningPC->GetGameInstance()) : nullptr)
+		{
+			BAGameInstance->PlayMainLobbyBGM();
+		}
+	}
+}
+
+void UBAUIManager::GoBack()
+{
+	if (!CanGoBack())
+		return;
+
+	ShowScreen(PrevScreenType);
+}
+
+bool UBAUIManager::CanGoBack() const
+{
+	return PrevScreenType != EUIScreen::END && !bIsTransitioning;
 }

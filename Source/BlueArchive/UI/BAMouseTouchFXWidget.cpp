@@ -6,8 +6,6 @@
 #include "Components/Image.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Engine/Texture2D.h"
-#include "SubSystem/BAResourceSubsystem.h"
-#include "Engine/GameInstance.h"
 
 void UBAMouseTouchFXWidget::InitializeFX_Implementation(UCanvasPanel* InCanvas)
 {
@@ -20,15 +18,6 @@ void UBAMouseTouchFXWidget::UpdateFX_Implementation(const FMouseFXFrame& Frame)
 	if (Frame.bJustPressed && Frame.bHasMousePos)
 	{
 		ActivateEffect(Frame.MousePos);
-
-		// 테스트용: 클릭할 때마다 크레딧 1000 추가
-		if (UGameInstance* GameInstance = GetGameInstance())
-		{
-			if (UBAResourceSubsystem* ResourceSubsystem = GameInstance->GetSubsystem<UBAResourceSubsystem>())
-			{
-				ResourceSubsystem->AddResource(EResourceType::Credit, 200);
-			}
-		}
 	}
 
 	UpdateEffects(Frame.DeltaTime);
@@ -38,7 +27,6 @@ void UBAMouseTouchFXWidget::InitializeEffectPool(UCanvasPanel* InCanvas, int32 P
 {
 	if (!InCanvas)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("BAMouseTouchFXWidget: Root가 CanvasPanel이 아닙니다."));
 		return;
 	}
 
@@ -78,12 +66,9 @@ void UBAMouseTouchFXWidget::InitializeEffectPool(UCanvasPanel* InCanvas, int32 P
 					Effect.ImageWidget->SetBrushFromMaterial(Effect.MID);
 				}
 			}
-			else
-			{
-				UE_LOG(LogTemp, Warning, TEXT("BAMouseTouchFXWidget: TouchMaterial 또는 TouchTexture를 할당해주세요."));
-			}
 
-			Effect.ImageWidget->SetVisibility(ESlateVisibility::HitTestInvisible);
+			// 비활성 풀은 Collapsed 유지. (0,0)에 두면 좌측 상단에 rect가 보이는 버그 방지.
+			// ActivateEffect/DeactivateEffect에서 HitTestInvisible ↔ Collapsed 전환.
 		}
 
 		EffectPool.Add(Effect);

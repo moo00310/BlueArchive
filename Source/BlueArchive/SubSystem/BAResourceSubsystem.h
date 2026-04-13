@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -60,6 +60,10 @@ public:
     FString GetUserName() const;
     UFUNCTION(BlueprintCallable, Category = "Resource|User")
     void SetUserLevel(int32 Level);
+
+    /** 플레이어 고유 식별자 반환 (없으면 자동 생성 후 저장) */
+    UFUNCTION(BlueprintCallable, Category = "Resource|User")
+    FString GetPlayerUID() const;
 
     /** 기본값 Data Asset 설정 (블루프린트에서 호출) */
     UFUNCTION(BlueprintCallable, Category = "Resource")

@@ -7,39 +7,28 @@
 #include "UI/UIEnumTypes.h"
 #include "BAScreenCoverWidget.generated.h"
 
-/**
- * 
- */
-
 DECLARE_MULTICAST_DELEGATE(FFadeFinished);
+
 UCLASS()
 class BLUEARCHIVE_API UBAScreenCoverWidget : public UBAUserWidget
 {
 	GENERATED_BODY()
-	
-public:
-	UFUNCTION(BlueprintCallable, Category = "Fade")
-	void PlayFadeOut();
-
-public:
-	UFUNCTION(BlueprintCallable)
-	void OnLoopCycleFinished();
-
-
-public:
-	UPROPERTY(EditAnywhere)
-	EScreenCoverFinishPolicy  FinishPolicy = EScreenCoverFinishPolicy::ANIMFINISHED;
 
 public:
 	FFadeFinished OnFadeOutFinished;
 
+	UFUNCTION(BlueprintCallable, Category = "Fade")
+	void PlayFadeOut();
+	UFUNCTION(BlueprintCallable)
+	void OnLoopCycleFinished();
+
+	UPROPERTY(EditAnywhere)
+	EScreenCoverFinishPolicy FinishPolicy = EScreenCoverFinishPolicy::ANIMFINISHED;
+
 protected:
 	UPROPERTY(meta = (BindWidgetAnim), Transient)
 	TObjectPtr<UWidgetAnimation> FadeOutAnim;
-
-
 };
-
 
 UCLASS()
 class BLUEARCHIVE_API UBAFadeWidget : public UBAScreenCoverWidget

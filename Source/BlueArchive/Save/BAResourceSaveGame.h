@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -28,7 +28,11 @@ public:
     /** 유저 레벨 (공용) */
     UPROPERTY(SaveGame)
     int32 UserLevel = 1;
-    
+
     UPROPERTY(SaveGame)
     FString UserName = TEXT("");
+
+    /** 플레이어 고유 식별자 - 최초 실행 시 자동 발급, 이후 변경 불가 */
+    UPROPERTY(SaveGame)
+    FString PlayerUID = TEXT("");
 };
