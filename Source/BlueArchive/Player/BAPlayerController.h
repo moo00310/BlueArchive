@@ -25,6 +25,14 @@ public:
 	ABAPlayerController();
 	virtual void BeginPlay() override;
 
+	// ───── UID 등록 RPC ─────
+
+	/** 클라이언트 → 서버: 접속 시 PlayerUID를 서버에 등록 */
+	UFUNCTION(Server, Reliable, WithValidation)
+	void ServerRegisterUID(const FString& UID);
+
+	// ────────────────────────
+
 	UFUNCTION(BlueprintCallable)
 	void RequestShowScreen(EUIScreen ScreenType);
 

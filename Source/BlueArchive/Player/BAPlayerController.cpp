@@ -4,6 +4,8 @@
 #include "Player/BAPlayerController.h"
 #include "Character/BAPreviewCharacter.h"
 #include "SubSystem/BACharacterDataSubsystem.h"
+#include "SubSystem/BAResourceSubsystem.h"
+#include "Game/BAGameModeBase.h"
 #include "Manager/BAUIManager.h"
 
 ABAPlayerController::ABAPlayerController()
@@ -42,6 +44,15 @@ void ABAPlayerController::BeginPlay()
 	if (BAUIManager)
 	{
 		BAUIManager->ShowScreen(EUIScreen::MAIN);
+	}
+
+	// 로컬 플레이어만 서버에 UID 등록 요청
+	if (IsLocalController())
+	{
+		if (UBAResourceSubsystem* ResSub = GetGameInstance()->GetSubsystem<UBAResourceSubsystem>())
+		{
+			ServerRegisterUID(ResSub->GetPlayerUID());
+		}
 	}
 
 	PreviewActors.SetNum(2);
@@ -121,6 +132,20 @@ void ABAPlayerController::SetPreviewSlotPressed(int32 Index, bool bPressed)
 	if (!PreviewActors.IsValidIndex(Index) || !PreviewActors[Index] || !IsValid(PreviewActors[Index]))
 		return;
 	PreviewActors[Index]->SetPreviewPressed(bPressed);
+}
+
+bool ABAPlayerController::ServerRegisterUID_Validate(const FString& UID)
+{
+	// 비어 있거나 비정상적으로 긴 UID는 거부
+	return !UID.IsEmpty() && UID.Len() <= 64;
+}
+
+void ABAPlayerController::ServerRegisterUID_Implementation(const FString& UID)
+{
+	if (ABAGameModeBase* GM = GetWorld()->GetAuthGameMode<ABAGameModeBase>())
+	{
+		GM->RegisterPlayerUID(this, UID);
+	}
 }
 
 void ABAPlayerController::LoadPreviewAssetsAsync(int32 Index, FName Id, TFunction<void(USkeletalMesh* LoadedMesh, TSubclassOf<UAnimInstance>LoadedAnimBP)> OnLoaded)

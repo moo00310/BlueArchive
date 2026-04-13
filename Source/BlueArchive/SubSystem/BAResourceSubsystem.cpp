@@ -59,10 +59,18 @@ void UBAResourceSubsystem::LoadOrCreate()
     if (UGameplayStatics::DoesSaveGameExist(SlotName, UserIndex))
     {
         SaveData = Cast<UBAResourceSaveGame>(UGameplayStatics::LoadGameFromSlot(SlotName, UserIndex));
-        
+
         if (SaveData)
         {
             EnsureDefaultResources();
+
+            // 기존 세이브에 UID가 없으면 신규 발급 (구버전 세이브 대응)
+            if (SaveData->PlayerUID.IsEmpty())
+            {
+                SaveData->PlayerUID = FGuid::NewGuid().ToString(EGuidFormats::DigitsWithHyphens);
+                UGameplayStatics::SaveGameToSlot(SaveData, SlotName, UserIndex);
+            }
+
             bDirty = false;
             return;
         }
@@ -80,6 +88,9 @@ void UBAResourceSubsystem::LoadOrCreate()
     {
         EnsureDefaultResources();
     }
+
+    // 신규 세이브: UID 최초 발급
+    SaveData->PlayerUID = FGuid::NewGuid().ToString(EGuidFormats::DigitsWithHyphens);
 
     UGameplayStatics::SaveGameToSlot(SaveData, SlotName, UserIndex);
 
@@ -184,6 +195,11 @@ int32 UBAResourceSubsystem::GetUserLevel() const
 FString UBAResourceSubsystem::GetUserName() const
 {
     return SaveData ? SaveData->UserName : TEXT("");
+}
+
+FString UBAResourceSubsystem::GetPlayerUID() const
+{
+    return SaveData ? SaveData->PlayerUID : TEXT("");
 }
 
 void UBAResourceSubsystem::SetUserLevel(int32 Level)
