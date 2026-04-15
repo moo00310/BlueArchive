@@ -177,6 +177,14 @@ void UBABannerWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
 {
     Super::NativeTick(MyGeometry, InDeltaTime);
 
+    // 창 크기가 바뀌면 캐시된 베이스 위치 무효화
+    const FVector2D CurrentSize = MyGeometry.GetLocalSize();
+    if (!CurrentSize.Equals(LastKnownSize, 0.1f))
+    {
+        LastKnownSize = CurrentSize;
+        bBaseTranslationsInitialized = false;
+    }
+
     if (!isLerp)
         return;
 
@@ -188,7 +196,7 @@ void UBABannerWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
 
     if (Alpha >= 1.f)
     {
-        if (SiledState == SILDESTATE::ANIMING)
+        if (SlideState == SLIDESTATE::ANIMING)
         {
             if(isNext)
             {
@@ -204,9 +212,9 @@ void UBABannerWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
                 }
             }
             
-            SiledState = SILDESTATE::FINAL;
+            SlideState = SLIDESTATE::FINAL;
         }
-        else if (SiledState == SILDESTATE::FINAL)
+        else if (SlideState == SLIDESTATE::FINAL)
         {
             ApplyDragVisual(0.f);
             ResetDragVisual();
@@ -214,7 +222,7 @@ void UBABannerWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
             fAnimElapsed = 0.f;
             fAnimTargetX = 0.f;
             isLerp = false;
-            SiledState = NONE;
+            SlideState = NONE;
         }  
     }
 }
@@ -320,7 +328,7 @@ FReply UBABannerWidget::NativeOnMouseButtonUp(const FGeometry& InGeometry, const
             fAnimTargetX = 0.f;
         }
 
-        SiledState = SILDESTATE::ANIMING;
+        SlideState = SLIDESTATE::ANIMING;
         fAnimStartX = DragX;
         isLerp = true;
         bIsDragging = false;

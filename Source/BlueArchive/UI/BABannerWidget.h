@@ -20,7 +20,7 @@ class BLUEARCHIVE_API UBABannerWidget : public UBAUserWidget
 	GENERATED_BODY()
 
 private:
-	enum SILDESTATE
+	enum SLIDESTATE
 	{
 		NONE,
 		ANIMING,
@@ -124,11 +124,13 @@ private:
 	FVector2D CurrBaseTranslation = FVector2D::ZeroVector;
 	FVector2D NextBaseTranslation = FVector2D::ZeroVector;
 
-	SILDESTATE SiledState = { SILDESTATE::NONE };
+	SLIDESTATE SlideState = { SLIDESTATE::NONE };
 	bool isLerp = { false };
 	bool isNext = { false };
 	float fAnimElapsed = { 0.f };
 	float fAnimStartX = { 0.f };
 	float fAnimTargetX = { 0.f };
 	const float fAnimDuration = 0.5f;
+
+	FVector2D LastKnownSize = FVector2D::ZeroVector;
 };

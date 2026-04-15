@@ -6,6 +6,7 @@
 #include "GameFramework/PlayerController.h"
 #include "Engine/StreamableManager.h"
 #include "UI/UIEnumTypes.h"
+#include "Struct/BAMailTypes.h"
 #include "BAPlayerController.generated.h"
 
 class ABAPreviewCharacter;
@@ -31,6 +32,20 @@ public:
 	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerRegisterUID(const FString& UID);
 
+	// ───── 메일 RPC ─────
+
+	/** 서버 → 클라이언트: 메일 수신 (GameMode에서 호출) */
+	UFUNCTION(Client, Reliable)
+	void ClientReceiveMail(const FBAMailItem& MailItem);
+
+	/** 클라이언트 → 서버: 보상 수령 요청 */
+	UFUNCTION(Server, Reliable, WithValidation)
+	void ServerClaimMailReward(FGuid MailId);
+
+	/** 서버 → 클라이언트: 보상 실제 지급 */
+	UFUNCTION(Client, Reliable)
+	void ClientApplyMailReward(FGuid MailId, const TArray<FBAMailReward>& Rewards);
+
 	// ────────────────────────
 
 	UFUNCTION(BlueprintCallable)
@@ -53,6 +68,9 @@ public:
 	void SetPreviewSlotPressed(int32 Index, bool bPressed);
 
 private:
+	/** UIManager의 OnScreenChanged에 바인딩 — 화면 전환 시 게임 로직 처리 */
+	void OnUIScreenChanged(EUIScreen Prev, EUIScreen Next);
+
 	void LoadPreviewAssetsAsync(int32 Index, FName Id,
 		TFunction<void(USkeletalMesh* LoadedMesh, TSubclassOf<UAnimInstance> LoadedAnimBP)> OnLoaded);
 

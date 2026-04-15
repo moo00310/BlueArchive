@@ -7,13 +7,11 @@
 #include "Game/BAGameDataAsset.h"
 #include "Kismet/GameplayStatics.h"
 #include "Misc/Paths.h"
-#include "TimerManager.h"
 
 void UBAResourceSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
     Super::Initialize(Collection);
 
-    // GameData 에셋에서 기본 리소스 에셋 참조 가져오기
     if (UBAGameInstance* BAGI = Cast<UBAGameInstance>(GetGameInstance()))
     {
         if (UBAGameDataAsset* GameData = BAGI->GameData)
@@ -33,7 +31,7 @@ void UBAResourceSubsystem::Initialize(FSubsystemCollectionBase& Collection)
     }
 
     LoadOrCreate();
- 
+
     for (const auto& Pair : SaveData->Resources)
     {
         OnResourceChanged.Broadcast(Pair.Key, Pair.Value);
@@ -43,43 +41,32 @@ void UBAResourceSubsystem::Initialize(FSubsystemCollectionBase& Collection)
     OnUserNameChanged.Broadcast(SaveData->UserName);
 }
 
-void UBAResourceSubsystem::Deinitialize()
+USaveGame* UBAResourceSubsystem::GetSaveData() const
 {
-    if (bDirty)
-    {
-        SaveNow();
-    }
-
-    Super::Deinitialize();
+    return SaveData;
 }
 
 void UBAResourceSubsystem::LoadOrCreate()
 {
-    // 저장된 슬롯이 있으면 로드
-    if (UGameplayStatics::DoesSaveGameExist(SlotName, UserIndex))
+    if (UGameplayStatics::DoesSaveGameExist(GetSlotName(), UserIndex))
     {
-        SaveData = Cast<UBAResourceSaveGame>(UGameplayStatics::LoadGameFromSlot(SlotName, UserIndex));
+        SaveData = Cast<UBAResourceSaveGame>(UGameplayStatics::LoadGameFromSlot(GetSlotName(), UserIndex));
 
         if (SaveData)
         {
             EnsureDefaultResources();
 
-            // 기존 세이브에 UID가 없으면 신규 발급 (구버전 세이브 대응)
             if (SaveData->PlayerUID.IsEmpty())
             {
                 SaveData->PlayerUID = FGuid::NewGuid().ToString(EGuidFormats::DigitsWithHyphens);
-                UGameplayStatics::SaveGameToSlot(SaveData, SlotName, UserIndex);
+                SaveNow();
             }
-
-            bDirty = false;
             return;
         }
     }
 
-    // 저장이 없거나 로드 실패 시 Data Asset의 기본값으로 새로 생성
     SaveData = Cast<UBAResourceSaveGame>(UGameplayStatics::CreateSaveGameObject(UBAResourceSaveGame::StaticClass()));
-    
-    // Data Asset에서 기본값 로드
+
     if (DefaultResourceDataAsset.IsValid())
     {
         InitializeFromDataAsset(DefaultResourceDataAsset.Get());
@@ -89,25 +76,19 @@ void UBAResourceSubsystem::LoadOrCreate()
         EnsureDefaultResources();
     }
 
-    // 신규 세이브: UID 최초 발급
     SaveData->PlayerUID = FGuid::NewGuid().ToString(EGuidFormats::DigitsWithHyphens);
-
-    UGameplayStatics::SaveGameToSlot(SaveData, SlotName, UserIndex);
-
-    bDirty = false;
+    SaveNow();
 }
 
 void UBAResourceSubsystem::EnsureDefaultResources()
 {
     if (!SaveData) return;
-    
-    // Data Asset에서 기본값 가져오기 시도
+
     if (DefaultResourceDataAsset.IsValid())
     {
         UBAResourceDataAsset* DataAsset = DefaultResourceDataAsset.Get();
         if (DataAsset)
         {
-            // Data Asset에 있는 리소스 타입은 기본값으로 채움
             for (const auto& Pair : DataAsset->Resources)
             {
                 if (!SaveData->Resources.Contains(Pair.Key))
@@ -115,12 +96,10 @@ void UBAResourceSubsystem::EnsureDefaultResources()
                     SaveData->Resources.Add(Pair.Key, Pair.Value);
                 }
             }
-            
             return;
         }
     }
-    
-    // Data Asset이 없으면 하드코딩된 기본값 사용
+
     if (!SaveData->Resources.Contains(EResourceType::Credit))
         SaveData->Resources.Add(EResourceType::Credit, 0);
     if (!SaveData->Resources.Contains(EResourceType::Energy))
@@ -134,8 +113,7 @@ void UBAResourceSubsystem::EnsureDefaultResources()
 void UBAResourceSubsystem::InitializeFromDataAsset(UBAResourceDataAsset* DataAsset)
 {
     if (!SaveData || !DataAsset) return;
-    
-    // Data Asset의 모든 데이터를 SaveGame에 복사
+
     SaveData->Resources = DataAsset->Resources;
     SaveData->UserLevel = DataAsset->UserLevel;
     SaveData->UserName = DataAsset->UserName;
@@ -144,7 +122,7 @@ void UBAResourceSubsystem::InitializeFromDataAsset(UBAResourceDataAsset* DataAss
 int32 UBAResourceSubsystem::GetResource(EResourceType ResourceType) const
 {
     if (!SaveData) return 0;
-    
+
     const int32* Value = SaveData->Resources.Find(ResourceType);
     return Value ? *Value : 0;
 }
@@ -221,42 +199,12 @@ void UBAResourceSubsystem::NotifyUserNameChanged(FString NewName)
     OnUserNameChanged.Broadcast(NewName);
 }
 
-void UBAResourceSubsystem::MarkDirty()
-{
-    bDirty = true;
-
-    UWorld* World = GetWorld();
-    if (!World) return;
-
-    World->GetTimerManager().ClearTimer(SaveDebounceTimer);
-    World->GetTimerManager().SetTimer(
-        SaveDebounceTimer,
-        FTimerDelegate::CreateUObject(this, &UBAResourceSubsystem::SaveNow),
-        1.0f,  
-        false
-    );
-}
-
-void UBAResourceSubsystem::SaveNow()
-{
-    if (!SaveData) return;
-
-    UGameplayStatics::SaveGameToSlot(SaveData, SlotName, UserIndex);
-    bDirty = false;
-
-    if (UWorld* World = GetWorld())
-    {
-        World->GetTimerManager().ClearTimer(SaveDebounceTimer);
-    }
-}
-
 void UBAResourceSubsystem::SetDefaultResourceDataAsset(UBAResourceDataAsset* DataAsset)
 {
     if (!DataAsset) return;
-    
+
     DefaultResourceDataAsset = DataAsset;
-    
-    // 이미 SaveData가 있으면 Data Asset의 기본값으로 업데이트 (없는 리소스 타입만)
+
     if (SaveData)
     {
         EnsureDefaultResources();
@@ -265,9 +213,9 @@ void UBAResourceSubsystem::SetDefaultResourceDataAsset(UBAResourceDataAsset* Dat
 
 FString UBAResourceSubsystem::GetSaveFilePath() const
 {
-    // 에디터/패키징 공통: Saved/SaveGames/SlotName.sav (UserIndex 0 기준)
     const FString SaveGamesDir = FPaths::ProjectSavedDir() / TEXT("SaveGames");
-    const FString FileName = (UserIndex == 0) ? (SlotName + TEXT(".sav")) : (FString::Printf(TEXT("%s_User%d.sav"), *SlotName, UserIndex));
+    const FString FileName = (UserIndex == 0)
+        ? (GetSlotName() + TEXT(".sav"))
+        : FString::Printf(TEXT("%s_User%d.sav"), *GetSlotName(), UserIndex);
     return FPaths::ConvertRelativePathToFull(SaveGamesDir / FileName);
 }
-

@@ -5,7 +5,9 @@
 #include "Character/BAPreviewCharacter.h"
 #include "SubSystem/BACharacterDataSubsystem.h"
 #include "SubSystem/BAResourceSubsystem.h"
+#include "SubSystem/BAMailSubsystem.h"
 #include "Game/BAGameModeBase.h"
+#include "Game/BAGameInstance.h"
 #include "Manager/BAUIManager.h"
 
 ABAPlayerController::ABAPlayerController()
@@ -30,34 +32,36 @@ void ABAPlayerController::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// 마우스 커서 표시 및 입력 모드 설정 (마우스 트레일을 위해 필요)
-	bShowMouseCursor = true;
-	bEnableClickEvents = true;
-	bEnableMouseOverEvents = true;
-	
-	// 입력 모드를 명확하게 설정
-	FInputModeGameAndUI InputMode;
-	InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
-	InputMode.SetHideCursorDuringCapture(false);
-	SetInputMode(InputMode);
-
-	if (BAUIManager)
-	{
-		BAUIManager->ShowScreen(EUIScreen::MAIN);
-	}
-
-	// 로컬 플레이어만 서버에 UID 등록 요청
+	// 로컬 플레이어에서만 실행 (서버·데디케이트 서버에서는 스킵)
 	if (IsLocalController())
 	{
+		// 마우스 커서 표시 및 입력 모드 설정
+		bShowMouseCursor = true;
+		bEnableClickEvents = true;
+		bEnableMouseOverEvents = true;
+
+		FInputModeGameAndUI InputMode;
+		InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+		InputMode.SetHideCursorDuringCapture(false);
+		SetInputMode(InputMode);
+
+		if (BAUIManager)
+		{
+			// 화면 전환 이벤트에 게임 로직 바인딩 (UIManager는 UI만 담당)
+			BAUIManager->OnScreenChanged.AddUObject(this, &ABAPlayerController::OnUIScreenChanged);
+			BAUIManager->ShowScreen(EUIScreen::MAIN);
+		}
+
+		// 서버에 UID 등록 요청
 		if (UBAResourceSubsystem* ResSub = GetGameInstance()->GetSubsystem<UBAResourceSubsystem>())
 		{
 			ServerRegisterUID(ResSub->GetPlayerUID());
 		}
-	}
 
-	PreviewActors.SetNum(2);
-	PreviewLoadHandles.SetNum(2);
-	PreviewRequestSerials.SetNum(2);
+		PreviewActors.SetNum(2);
+		PreviewLoadHandles.SetNum(2);
+		PreviewRequestSerials.SetNum(2);
+	}
 }
 
 ABAPreviewCharacter* ABAPlayerController::EnsurePreviewActor(int32 index)
@@ -145,6 +149,55 @@ void ABAPlayerController::ServerRegisterUID_Implementation(const FString& UID)
 	if (ABAGameModeBase* GM = GetWorld()->GetAuthGameMode<ABAGameModeBase>())
 	{
 		GM->RegisterPlayerUID(this, UID);
+	}
+}
+
+// ───── 메일 RPC 구현 ─────
+
+void ABAPlayerController::ClientReceiveMail_Implementation(const FBAMailItem& MailItem)
+{
+	if (UBAMailSubsystem* MailSub = GetGameInstance()->GetSubsystem<UBAMailSubsystem>())
+	{
+		MailSub->OnMailReceived(MailItem);
+	}
+}
+
+bool ABAPlayerController::ServerClaimMailReward_Validate(FGuid MailId)
+{
+	return MailId.IsValid();
+}
+
+void ABAPlayerController::ServerClaimMailReward_Implementation(FGuid MailId)
+{
+	if (ABAGameModeBase* GM = GetWorld()->GetAuthGameMode<ABAGameModeBase>())
+	{
+		GM->ProcessRewardClaim(this, MailId);
+	}
+}
+
+void ABAPlayerController::ClientApplyMailReward_Implementation(FGuid MailId, const TArray<FBAMailReward>& Rewards)
+{
+	if (UBAMailSubsystem* MailSub = GetGameInstance()->GetSubsystem<UBAMailSubsystem>())
+	{
+		MailSub->ApplyRewardsLocally(MailId, Rewards);
+	}
+}
+
+void ABAPlayerController::OnUIScreenChanged(EUIScreen Prev, EUIScreen Next)
+{
+	// SELECT 화면을 떠날 때 프리뷰 액터 정리
+	if (Prev == EUIScreen::SELECT)
+	{
+		ReleasePreviewActor();
+	}
+
+	// MAIN 화면 진입 시 BGM 재생
+	if (Next == EUIScreen::MAIN)
+	{
+		if (UBAGameInstance* GI = Cast<UBAGameInstance>(GetGameInstance()))
+		{
+			GI->PlayMainLobbyBGM();
+		}
 	}
 }
 

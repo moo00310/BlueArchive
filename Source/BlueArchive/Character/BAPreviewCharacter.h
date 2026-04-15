@@ -21,7 +21,7 @@ public:
 
 	void Init(USkeletalMesh* Mesh, UTextureRenderTarget2D* ViewRT, UTextureRenderTarget2D* MaskRT);
 	void SetCharacter(USkeletalMesh* NewMesh, TSubclassOf<UAnimInstance> NewAnimBP);
-	/** ???????? ?? true, ???? ?? false. AnimInstance(bIsPressed)?? ??????? ????? AnimBP ?????? ??? */
+	/** 롱프레스 시 true, 손을 뗄 때 false. AnimInstance(bIsPressed)를 통해 AnimBP 내부에서 Idle/Pressed 전환 처리 */
 	void SetPreviewPressed(bool bPressed);
 	void SetRenderTargets(UTextureRenderTarget2D* ColorRT, UTextureRenderTarget2D* MaskRT);
 
