@@ -1,31 +1,26 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
+// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Subsystems/GameInstanceSubsystem.h"
+#include "SubSystem/BASaveGameSubsystem.h"
 #include "SubSystem/BAResourceTypes.h"
+#include "GameFramework/SaveGame.h"
 #include "BAResourceSubsystem.generated.h"
 
 class UBAResourceSaveGame;
 class UBAResourceDataAsset;
 
-/**
- * ??? ?? ??? ?????
- * @param ResourceType ??? ??? ??
- * @param NewValue ??? ?
- */
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnResourceChanged, EResourceType, ResourceType, int32, NewValue);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnUserLevelChanged, int32, NewLevel);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnUserNameChanged, const FString&, NewName);
 
 UCLASS()
-class UBAResourceSubsystem : public UGameInstanceSubsystem
+class UBAResourceSubsystem : public UBASaveGameSubsystem
 {
     GENERATED_BODY()
 public:
     virtual void Initialize(FSubsystemCollectionBase& Collection) override;
-    virtual void Deinitialize() override;
 
     UFUNCTION(BlueprintCallable, Category = "Resource")
     int32 GetResource(EResourceType ResourceType) const;
@@ -40,62 +35,53 @@ public:
     void SetResource(EResourceType ResourceType, int32 Value);
 
     UFUNCTION(BlueprintCallable, Category = "Resource")
-    void SaveNow();
+    FString GetSaveSlotName() const { return GetSlotName(); }
 
-    /** 현재 사용 중인 슬롯 이름 */
-    UFUNCTION(BlueprintCallable, Category = "Resource")
-    FString GetSaveSlotName() const { return SlotName; }
-
-    /** SaveGame 파일이 저장·로드되는 전체 경로 (에디터: 프로젝트/Saved/SaveGames) */
     UFUNCTION(BlueprintCallable, Category = "Resource")
     FString GetSaveFilePath() const;
 
     UPROPERTY(BlueprintAssignable, Category = "Resource")
     FOnResourceChanged OnResourceChanged;
 
-    // === 유저 레벨/경험치 (공용) ===
+    // === 유저 정보 ===
     UFUNCTION(BlueprintCallable, Category = "Resource|User")
     int32 GetUserLevel() const;
+
     UFUNCTION(BlueprintCallable, Category = "Resource|User")
     FString GetUserName() const;
+
     UFUNCTION(BlueprintCallable, Category = "Resource|User")
     void SetUserLevel(int32 Level);
 
-    /** 플레이어 고유 식별자 반환 (없으면 자동 생성 후 저장) */
     UFUNCTION(BlueprintCallable, Category = "Resource|User")
     FString GetPlayerUID() const;
 
-    /** 기본값 Data Asset 설정 (블루프린트에서 호출) */
     UFUNCTION(BlueprintCallable, Category = "Resource")
     void SetDefaultResourceDataAsset(UBAResourceDataAsset* DataAsset);
 
-    // ====== 델리게이트 ==========
     UPROPERTY(BlueprintAssignable, Category = "Resource|User")
     FOnUserLevelChanged OnUserLevelChanged;
 
     UPROPERTY(BlueprintAssignable, Category = "Resource|User")
     FOnUserNameChanged OnUserNameChanged;
 
+protected:
+    virtual FString GetSlotName() const override { return SlotName; }
+    virtual USaveGame* GetSaveData() const override;
+
 private:
     UPROPERTY()
     TObjectPtr<UBAResourceSaveGame> SaveData;
 
-    /** 기본값을 제공하는 Data Asset (블루프린트에서 SetDefaultResourceDataAsset으로 설정) */
     UPROPERTY()
     TSoftObjectPtr<UBAResourceDataAsset> DefaultResourceDataAsset;
 
-    FString SlotName = TEXT("BA_ResourceSlot");
-    int32 UserIndex = 0;
+    static constexpr const TCHAR* SlotName = TEXT("BA_ResourceSlot");
 
-    bool bDirty = false;
-    FTimerHandle SaveDebounceTimer;
-
-private:
     void LoadOrCreate();
-    void MarkDirty();
     void EnsureDefaultResources();
     void InitializeFromDataAsset(UBAResourceDataAsset* DataAsset);
-    
+
     void NotifyResourceChanged(EResourceType ResourceType, int32 NewValue);
     void NotifyUserLevelChanged(int32 NewLevel);
     void NotifyUserNameChanged(FString NewName);

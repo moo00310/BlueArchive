@@ -5,50 +5,36 @@
 #include "Save/BACharacterSaveGame.h"
 #include "Save/BAPartySaveGame.h"
 #include "Kismet/GameplayStatics.h"
-#include "Misc/Paths.h"
-#include "TimerManager.h"
 #include "Engine/World.h"
 #include "Engine/GameInstance.h"
 
 void UBACharacterDataSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
     Super::Initialize(Collection);
-    // CharacterDataTable은 GameInstance::Init()에서 GameData->Init() 경로로 SetCharacterDataTable() 호출 시 설정됨
-
     LoadOrCreate();
     LoadPartyOrCreate();
 }
 
 void UBACharacterDataSubsystem::Deinitialize()
 {
-    if (bDirty)
-    {
-        SaveNow();
-    }
-
     SavePartyNow();
+    Super::Deinitialize(); // dirty 상태면 보유 캐릭터 즉시 저장
+}
 
-    Super::Deinitialize();
+USaveGame* UBACharacterDataSubsystem::GetSaveData() const
+{
+    return SaveData;
 }
 
 UBACharacterDataSubsystem* UBACharacterDataSubsystem::Get(const UObject* WorldContextObject)
 {
-    if (!WorldContextObject)
-    {
-        return nullptr;
-    }
+    if (!WorldContextObject) return nullptr;
 
     UWorld* World = WorldContextObject->GetWorld();
-    if (!World)
-    {
-        return nullptr;
-    }
+    if (!World) return nullptr;
 
     UGameInstance* GameInstance = World->GetGameInstance();
-    if (!GameInstance)
-    {
-        return nullptr;
-    }
+    if (!GameInstance) return nullptr;
 
     return GameInstance->GetSubsystem<UBACharacterDataSubsystem>();
 }
@@ -57,6 +43,8 @@ void UBACharacterDataSubsystem::SetCharacterDataTable(UDataTable* InTable)
 {
     CharacterDataTable = InTable;
 }
+
+// ====== 정적 데이터 ======
 
 bool UBACharacterDataSubsystem::GetCharacterDefinition(FName CharacterId, FCharacterRow& OutRow) const
 {
@@ -88,24 +76,13 @@ FBaseStats UBACharacterDataSubsystem::GetCharacterBaseStats(FName CharacterId) c
 
 TArray<FName> UBACharacterDataSubsystem::GetAllCharacterIds() const
 {
-    TArray<FName> CharacterIds;
-
-    if (!CharacterDataTable)
-        return CharacterIds;
-
-    // DataTable의 모든 RowName을 가져옴
-    TArray<FName> RowNames = CharacterDataTable->GetRowNames();
-    CharacterIds = RowNames;
-
-    return CharacterIds;
+    if (!CharacterDataTable) return {};
+    return CharacterDataTable->GetRowNames();
 }
 
 const FCharacterRow* UBACharacterDataSubsystem::FindCharacterRow(FName CharacterId) const
 {
-    if (!CharacterDataTable)
-    {
-        return nullptr;
-    }
+    if (!CharacterDataTable) return nullptr;
 
     FName RowId = CharacterId;
     if (CharacterId == NAME_None || CharacterId == FName(TEXT("0")))
@@ -113,48 +90,28 @@ const FCharacterRow* UBACharacterDataSubsystem::FindCharacterRow(FName Character
         RowId = FName(TEXT("CHR_000"));
     }
 
-    FCharacterRow* RowPtr = CharacterDataTable->FindRow<FCharacterRow>(RowId, TEXT("GetCharacterDefinition"));
-
-    if (!RowPtr)
-    {
-        return nullptr;
-    }
-
-    return RowPtr;
+    return CharacterDataTable->FindRow<FCharacterRow>(RowId, TEXT("FindCharacterRow"));
 }
 
-// ====== 보유 캐릭터 관리 (동적 데이터) ======
+// ====== 보유 캐릭터 ======
 
 void UBACharacterDataSubsystem::LoadOrCreate()
 {
-    // 저장된 슬롯이 있으면 로드
-    if (UGameplayStatics::DoesSaveGameExist(SlotName, UserIndex))
+    if (UGameplayStatics::DoesSaveGameExist(GetSlotName(), UserIndex))
     {
-        SaveData = Cast<UBACharacterSaveGame>(UGameplayStatics::LoadGameFromSlot(SlotName, UserIndex));
-        
-        if (SaveData)
-        {
-            bDirty = false;
-            return;
-        }
+        SaveData = Cast<UBACharacterSaveGame>(UGameplayStatics::LoadGameFromSlot(GetSlotName(), UserIndex));
+        if (SaveData) return;
     }
 
-    // 저장이 없거나 로드 실패 시 새로 생성
     SaveData = Cast<UBACharacterSaveGame>(UGameplayStatics::CreateSaveGameObject(UBACharacterSaveGame::StaticClass()));
-    
-    if (!SaveData)
-    {
-        return;
-    }
+    if (!SaveData) return;
 
     for (int32 i = 1; i <= 35; ++i)
     {
-        FName Id = FName(*FString::Printf(TEXT("CHR_%03d"), i));
-        AddOwnedCharacterById(Id, 03, 03);
+        AddOwnedCharacterById(FName(*FString::Printf(TEXT("CHR_%03d"), i)), 3, 3);
     }
 
-    UGameplayStatics::SaveGameToSlot(SaveData, SlotName, UserIndex);
-    bDirty = false;
+    SaveNow();
 }
 
 bool UBACharacterDataSubsystem::GetOwnedCharacter(FName CharacterId, FOwnedCharacter& OutCharacter) const
@@ -228,10 +185,9 @@ void UBACharacterDataSubsystem::SetOwnedCharacterStar(FName CharacterId, int32 N
 
 TArray<FName> UBACharacterDataSubsystem::GetAllOwnedCharacterIds() const
 {
+    if (!SaveData) return {};
+
     TArray<FName> CharacterIds;
-
-    if (!SaveData) return CharacterIds;
-
     SaveData->OwnedCharacters.GetKeys(CharacterIds);
     return CharacterIds;
 }
@@ -242,40 +198,10 @@ bool UBACharacterDataSubsystem::HasOwnedCharacter(FName CharacterId) const
     return SaveData->OwnedCharacters.Contains(CharacterId);
 }
 
-void UBACharacterDataSubsystem::SaveNow()
-{
-    if (!SaveData) return;
-
-    UGameplayStatics::SaveGameToSlot(SaveData, SlotName, UserIndex);
-    bDirty = false;
-
-    if (UWorld* World = GetWorld())
-    {
-        World->GetTimerManager().ClearTimer(SaveDebounceTimer);
-    }
-}
-
-void UBACharacterDataSubsystem::MarkDirty()
-{
-    bDirty = true;
-
-    UWorld* World = GetWorld();
-    if (!World) return;
-
-    World->GetTimerManager().ClearTimer(SaveDebounceTimer);
-    World->GetTimerManager().SetTimer(
-        SaveDebounceTimer,
-        FTimerDelegate::CreateUObject(this, &UBACharacterDataSubsystem::SaveNow),
-        1.0f,
-        false
-    );
-}
-
-// ====== 파티 저장/로드 ======
+// ====== 파티 ======
 
 void UBACharacterDataSubsystem::LoadPartyOrCreate()
 {
-    // 데이터가 존재하는지 확인
     if (UGameplayStatics::DoesSaveGameExist(PartySlotName, UserIndex))
     {
         PartySaveData = Cast<UBAPartySaveGame>(UGameplayStatics::LoadGameFromSlot(PartySlotName, UserIndex));
@@ -289,34 +215,27 @@ void UBACharacterDataSubsystem::LoadPartyOrCreate()
         }
     }
 
-    // 데이터 생성
     PartySaveData = Cast<UBAPartySaveGame>(UGameplayStatics::CreateSaveGameObject(UBAPartySaveGame::StaticClass()));
     if (PartySaveData)
     {
         PartySaveData->PartyPresets.SetNum(MaxPartyPresets);
-        UGameplayStatics::SaveGameToSlot(PartySaveData, PartySlotName, UserIndex);
+        SavePartyNow();
     }
 }
 
 TArray<FName> UBACharacterDataSubsystem::GetPartyPreset(int32 PresetIndex) const
 {
     TArray<FName> Result;
-    if (!PartySaveData || PresetIndex < 0 || PresetIndex >= MaxPartyPresets)
-    {
-        return Result;
-    }
+    if (!PartySaveData || PresetIndex < 0 || PresetIndex >= MaxPartyPresets) return Result;
+
     if (PresetIndex < PartySaveData->PartyPresets.Num())
     {
         Result = PartySaveData->PartyPresets[PresetIndex].CharacterIds;
     }
-    if (Result.Num() > MaxMembersPerParty)
-    {
-        Result.SetNum(MaxMembersPerParty);
-    }
-    while (Result.Num() < MaxMembersPerParty)
-    {
-        Result.Add("CHR_000");
-    }
+
+    if (Result.Num() > MaxMembersPerParty) Result.SetNum(MaxMembersPerParty);
+    while (Result.Num() < MaxMembersPerParty) Result.Add(FName(TEXT("CHR_000")));
+
     return Result;
 }
 
@@ -328,11 +247,14 @@ void UBACharacterDataSubsystem::SetPartyPreset(int32 PresetIndex, const TArray<F
     {
         PartySaveData->PartyPresets.Add(FPartyPreset());
     }
-    PartySaveData->PartyPresets[PresetIndex].CharacterIds.Empty();
+
+    TArray<FName>& Preset = PartySaveData->PartyPresets[PresetIndex].CharacterIds;
+    Preset.Empty();
     for (int32 i = 0; i < FMath::Min(CharacterIds.Num(), MaxMembersPerParty); ++i)
     {
-        PartySaveData->PartyPresets[PresetIndex].CharacterIds.Add(CharacterIds[i]);
+        Preset.Add(CharacterIds[i]);
     }
+
     SavePartyNow();
 }
 
@@ -342,22 +264,20 @@ void UBACharacterDataSubsystem::SavePartyNow()
     UGameplayStatics::SaveGameToSlot(PartySaveData, PartySlotName, UserIndex);
 }
 
+// ====== 에셋 로드 ======
+
 bool UBACharacterDataSubsystem::GetCharacterPreviewAsset(FName Id, TSoftObjectPtr<USkeletalMesh>& OutMesh, TSoftClassPtr<UAnimInstance>& OutAnimBP)
 {
     OutMesh = nullptr;
     OutAnimBP = nullptr;
 
-    if (!CharacterDataTable || Id.IsNone())
-        return false;
+    if (!CharacterDataTable || Id.IsNone()) return false;
 
-    const FCharacterRow* RowPtr =
-        CharacterDataTable->FindRow<FCharacterRow>(Id, TEXT("GetCharacterPreviewAsset"));
-
-    if (!RowPtr)
-        return false;
+    const FCharacterRow* RowPtr = CharacterDataTable->FindRow<FCharacterRow>(Id, TEXT("GetCharacterPreviewAsset"));
+    if (!RowPtr) return false;
 
     OutMesh = RowPtr->PreviewMesh;
     OutAnimBP = RowPtr->PreviewAnimBP;
 
-    return OutMesh.IsValid() || !OutMesh.IsNull();
+    return !OutMesh.IsNull();
 }

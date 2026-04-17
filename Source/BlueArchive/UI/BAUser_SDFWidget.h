@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "UI/BAUserWidget.h"
 #include "Components/Image.h"
+#include "Blueprint/WidgetLayoutLibrary.h"
 #include "BAUser_SDFWidget.generated.h"
 
 /**
@@ -15,10 +16,10 @@ class BLUEARCHIVE_API UBAUser_SDFWidget : public UBAUserWidget
 {
 	GENERATED_BODY()
 	
-public:	
+public:
 	virtual void NativeConstruct() override;
 	virtual void NativePreConstruct() override;
-
+	virtual void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;
 	virtual void SynchronizeProperties() override;
 public:
 	UFUNCTION(BlueprintCallable)
@@ -29,6 +30,10 @@ public:
 	void SetColorAdd(FLinearColor vColor);
 
 	void UpdateMaterialFromDesigner();
+
+private:
+	float GetScaledHalfSize() const;
+	float CachedDPIScale = 1.f;
 
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SDF", meta = (ClampMin = "0.0"))

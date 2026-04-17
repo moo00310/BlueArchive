@@ -1,17 +1,18 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
-
 #include "Manager/BAUIManager.h"
-#include "Player/BAPlayerController.h"
-#include "Game/BAGameInstance.h"
 #include "UI/BAScreenCoverWidget.h"
 #include "UI/BAMouseFXRootWidget.h"
-
 
 void UBAUIManager::BeginPlay()
 {
 	Super::BeginPlay();
+
 	OwningPC = Cast<APlayerController>(GetOwner());
+
+	// 서버 / 데디케이트 서버에서는 UI 초기화 스킵
+	if (!OwningPC || !OwningPC->IsLocalController())
+		return;
 
 	if (MainAnimWidgetClass)
 	{
@@ -27,7 +28,6 @@ void UBAUIManager::BeginPlay()
 		BlackWidget->SetVisibility(ESlateVisibility::Hidden);
 	}
 
-
 	MainAnimWidget->OnFadeOutFinished.AddUObject(this, &UBAUIManager::OnFadeOutFinished);
 	BlackWidget->OnFadeOutFinished.AddUObject(this, &UBAUIManager::OnFadeOutFinished);
 
@@ -39,31 +39,11 @@ void UBAUIManager::BeginPlay()
 			MouseFXRootWidget->AddToViewport(2000);
 		}
 	}
-
-
-	OnScreenChanged.AddUObject(this, &UBAUIManager::HandleScreenChanged);
 }
 
 void UBAUIManager::ShowScreen_TSubclassOf(EUIScreen ScreenType)
 {
-	//curScreenType = ScreenType;
-
- //   if (CurrentScreen)
- //   {
- //       CurrentScreen->RemoveFromParent();
- //       CurrentScreen = nullptr;
- //   }
-
- //   if (!mapScreenClasses.Contains(ScreenType))
- //       return;
-
- //   CurrentScreen = CreateWidget<UBAUserWidget>(
- //       GetWorld(),
- //       mapScreenClasses[ScreenType]
- //   );
-
-
- //   CurrentScreen->AddToViewport(0);
+	// 미사용 (주석 유지)
 }
 
 void UBAUIManager::ShowScreen(EUIScreen ScreenType)
@@ -71,13 +51,13 @@ void UBAUIManager::ShowScreen(EUIScreen ScreenType)
 	if (bIsTransitioning)
 		return;
 
-	if (curScreenType == ScreenType)
+	if (CurrentScreenType == ScreenType)
 		return;
 
 	bIsTransitioning = true;
 
-	PrevScreenType = curScreenType;
-	curScreenType = ScreenType;
+	PrevScreenType = CurrentScreenType;
+	CurrentScreenType = ScreenType;
 
 	PreloadNextScreen();
 
@@ -96,7 +76,7 @@ void UBAUIManager::ShowScreen(EUIScreen ScreenType)
 void UBAUIManager::PreloadNextScreen()
 {
 	const TSoftClassPtr<UBAUserWidget>* NextClass =
-		mapScreenClasses.Find(curScreenType);
+		mapScreenClasses.Find(CurrentScreenType);
 
 	if (!NextClass)
 		return;
@@ -108,10 +88,7 @@ void UBAUIManager::PreloadNextScreen()
 		StreamableHandle = UAssetManager::GetStreamableManager()
 			.RequestAsyncLoad(
 				NextClass->ToSoftObjectPath(),
-				FStreamableDelegate::CreateUObject(
-					this,
-					&UBAUIManager::OnScreenLoaded
-				)
+				FStreamableDelegate::CreateUObject(this, &UBAUIManager::OnScreenLoaded)
 			);
 	}
 	else
@@ -152,40 +129,18 @@ void UBAUIManager::TrySwitchScreen()
 		CurrentScreen = nullptr;
 	}
 
-	// New Screen
-	const TSoftClassPtr<UBAUserWidget>& SoftClass =
-		mapScreenClasses[curScreenType];
-
+	const TSoftClassPtr<UBAUserWidget>& SoftClass = mapScreenClasses[CurrentScreenType];
 	CurrentScreen = CreateWidget<UBAUserWidget>(OwningPC, SoftClass.Get());
 	CurrentScreen->AddToViewport(0);
 	CurrentScreen->PlayInAnim();
-	OnScreenChanged.Broadcast(PrevScreenType, curScreenType);
+
+	// 화면 전환 완료 → 외부 리스너에게 통지 (게임 로직은 각 클래스에서 바인딩)
+	OnScreenChanged.Broadcast(PrevScreenType, CurrentScreenType);
 }
 
-bool UBAUIManager::ShouldUseFade(EUIScreen pre, EUIScreen next)
+bool UBAUIManager::ShouldUseFade(EUIScreen Pre, EUIScreen Next)
 {
-	return pre == EUIScreen::MAIN && next == EUIScreen::CONTENTS;
-}
-
-void UBAUIManager::HandleScreenChanged(EUIScreen Prev, EUIScreen Next)
-{
-	if (!OwningPC) return;
-
-	ABAPlayerController* BAPC = Cast<ABAPlayerController>(OwningPC);
-
-	if (BAPC)
-	{
-		if (Prev == EUIScreen::SELECT)
-			BAPC->ReleasePreviewActor();
-	}
-
-	if (Next == EUIScreen::MAIN)
-	{
-		if (UBAGameInstance* BAGameInstance = OwningPC ? Cast<UBAGameInstance>(OwningPC->GetGameInstance()) : nullptr)
-		{
-			BAGameInstance->PlayMainLobbyBGM();
-		}
-	}
+	return Pre == EUIScreen::MAIN && Next == EUIScreen::CONTENTS;
 }
 
 void UBAUIManager::GoBack()

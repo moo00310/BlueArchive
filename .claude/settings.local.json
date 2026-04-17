@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__unrealClaude__unreal_ue",
+      "mcp__unrealClaude__unreal_blueprint_query",
+      "mcp__unrealClaude__unreal_get_ue_context",
+      "mcp__unrealClaude__unreal_get_output_log"
+    ]
+  }
+}

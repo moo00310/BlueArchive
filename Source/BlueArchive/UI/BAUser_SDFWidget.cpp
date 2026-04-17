@@ -16,6 +16,18 @@ void UBAUser_SDFWidget::NativeConstruct()
 	
 }
 
+void UBAUser_SDFWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
+{
+	Super::NativeTick(MyGeometry, InDeltaTime);
+
+	const float CurrentDPI = UWidgetLayoutLibrary::GetViewportScale(GetWorld());
+	if (!FMath::IsNearlyEqual(CurrentDPI, CachedDPIScale, 0.001f))
+	{
+		CachedDPIScale = CurrentDPI;
+		UpdateMaterialFromDesigner();
+	}
+}
+
 void UBAUser_SDFWidget::NativePreConstruct()
 {
 	Super::NativePreConstruct();
@@ -32,6 +44,12 @@ void UBAUser_SDFWidget::SynchronizeProperties()
 	UpdateMaterialFromDesigner();
 }
 
+float UBAUser_SDFWidget::GetScaledHalfSize() const
+{
+	const float DPIScale = UWidgetLayoutLibrary::GetViewportScale(GetWorld());
+	return HalfSizePx * DPIScale;
+}
+
 void UBAUser_SDFWidget::SetHalfSize(float HalfSizeXPx)
 {
 	if (!SDF_Image)
@@ -40,7 +58,8 @@ void UBAUser_SDFWidget::SetHalfSize(float HalfSizeXPx)
 	if (!MID)
 		MID = SDF_Image->GetDynamicMaterial();
 
-	MID->SetScalarParameterValue(TEXT("HalfSizePx"), HalfSizeXPx);
+	HalfSizePx = HalfSizeXPx;
+	MID->SetScalarParameterValue(TEXT("HalfSizePx"), GetScaledHalfSize());
 }
 
 void UBAUser_SDFWidget::SetTintStrength(float TintStrength)
@@ -93,7 +112,7 @@ void UBAUser_SDFWidget::UpdateMaterialFromDesigner()
 
 	MID->SetScalarParameterValue(
 		TEXT("HalfSizePx"),
-		HalfSizePx
+		GetScaledHalfSize()
 	);
 
 	MID->SetScalarParameterValue(

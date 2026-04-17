@@ -25,7 +25,6 @@ public:
 
 	void ShowScreen_TSubclassOf(EUIScreen ScreenType);
 	void ShowScreen(EUIScreen ScreenType);
-	void HandleScreenChanged(EUIScreen Prev, EUIScreen Next);
 
 	UFUNCTION(BlueprintCallable, Category = "UI|Navigation")
 	void GoBack();
@@ -34,7 +33,7 @@ public:
 	bool CanGoBack() const;
 
 	UFUNCTION(BlueprintPure, Category = "UI|Navigation")
-	EUIScreen GetCurrentScreen() const { return curScreenType; }
+	EUIScreen GetCurrentScreen() const { return CurrentScreenType; }
 
 	UFUNCTION(BlueprintPure, Category = "UI|Navigation")
 	EUIScreen GetPrevScreen() const { return PrevScreenType; }
@@ -64,11 +63,15 @@ private:
 	UPROPERTY()
 	TObjectPtr<UBAMouseFXRootWidget> MouseFXRootWidget = nullptr;
 	UPROPERTY()
-	EUIScreen curScreenType = EUIScreen::END;
+	EUIScreen CurrentScreenType = EUIScreen::END;
 	UPROPERTY()
 	TObjectPtr<APlayerController> OwningPC;
 
+public:
+	/** 화면 전환 완료 시 발행 — 외부 클래스에서 바인딩해 게임 로직 처리 */
 	FOnScreenChanged OnScreenChanged;
+
+private:
 	EUIScreen PrevScreenType = EUIScreen::END;
 	TSharedPtr<FStreamableHandle> StreamableHandle;
 	bool bIsTransitioning = false;

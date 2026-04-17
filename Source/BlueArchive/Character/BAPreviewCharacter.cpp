@@ -41,11 +41,11 @@ void ABAPreviewCharacter::Init(USkeletalMesh* Mesh, UTextureRenderTarget2D* View
     CaptureColor->ShowOnlyComponent(Skel);
     CaptureColor->CaptureSource = SCS_FinalColorHDR;
 
-    // (????) ?????? ???? PP ???? ?? ???
+    // 포스트프로세스를 제거하고 게임 기본 ShowFlags로 초기화
     CaptureColor->ShowFlags = FEngineShowFlags(EShowFlagInitMode::ESFIM_Game);
-    CaptureColor->ShowFlags.SetPostProcessing(false); // ????? true?? ??? ?????? ????
+    CaptureColor->ShowFlags.SetPostProcessing(false); // 기본값이 true이므로 명시적으로 비활성화
 
-    // ???? ????(???????? ???? ???)
+    // 노출 고정 (자동노출로 인한 밝기 변화 방지)
     CaptureColor->PostProcessSettings.bOverride_AutoExposureMinBrightness = true;
     CaptureColor->PostProcessSettings.bOverride_AutoExposureMaxBrightness = true;
     CaptureColor->PostProcessSettings.AutoExposureMinBrightness = 1.0f;
