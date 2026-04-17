@@ -460,6 +460,276 @@
 				"options": {
 					"cwd": "E:\\UE_5.7"
 				}
+			},
+			{
+				"label": "BlueArchiveServer Win64 Debug Build",
+				"group": "build",
+				"command": "Engine\\Build\\BatchFiles\\Build.bat",
+				"args": [
+					"BlueArchiveServer",
+					"Win64",
+					"Debug",
+					"E:\\Unreal_Project\\BlueArchive\\BlueArchive.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"type": "shell",
+				"options": {
+					"cwd": "E:\\UE_5.7"
+				}
+			},
+			{
+				"label": "BlueArchiveServer Win64 Debug Rebuild",
+				"group": "build",
+				"command": "Engine\\Build\\BatchFiles\\Build.bat",
+				"args": [
+					"BlueArchiveServer",
+					"Win64",
+					"Debug",
+					"E:\\Unreal_Project\\BlueArchive\\BlueArchive.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"dependsOn": [
+					"BlueArchiveServer Win64 Debug Clean"
+				],
+				"type": "shell",
+				"options": {
+					"cwd": "E:\\UE_5.7"
+				}
+			},
+			{
+				"label": "BlueArchiveServer Win64 Debug Clean",
+				"group": "build",
+				"command": "Engine\\Build\\BatchFiles\\Clean.bat",
+				"args": [
+					"BlueArchiveServer",
+					"Win64",
+					"Debug",
+					"E:\\Unreal_Project\\BlueArchive\\BlueArchive.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"type": "shell",
+				"options": {
+					"cwd": "E:\\UE_5.7"
+				}
+			},
+			{
+				"label": "BlueArchiveServer Win64 DebugGame Build",
+				"group": "build",
+				"command": "Engine\\Build\\BatchFiles\\Build.bat",
+				"args": [
+					"BlueArchiveServer",
+					"Win64",
+					"DebugGame",
+					"E:\\Unreal_Project\\BlueArchive\\BlueArchive.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"type": "shell",
+				"options": {
+					"cwd": "E:\\UE_5.7"
+				}
+			},
+			{
+				"label": "BlueArchiveServer Win64 DebugGame Rebuild",
+				"group": "build",
+				"command": "Engine\\Build\\BatchFiles\\Build.bat",
+				"args": [
+					"BlueArchiveServer",
+					"Win64",
+					"DebugGame",
+					"E:\\Unreal_Project\\BlueArchive\\BlueArchive.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"dependsOn": [
+					"BlueArchiveServer Win64 DebugGame Clean"
+				],
+				"type": "shell",
+				"options": {
+					"cwd": "E:\\UE_5.7"
+				}
+			},
+			{
+				"label": "BlueArchiveServer Win64 DebugGame Clean",
+				"group": "build",
+				"command": "Engine\\Build\\BatchFiles\\Clean.bat",
+				"args": [
+					"BlueArchiveServer",
+					"Win64",
+					"DebugGame",
+					"E:\\Unreal_Project\\BlueArchive\\BlueArchive.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"type": "shell",
+				"options": {
+					"cwd": "E:\\UE_5.7"
+				}
+			},
+			{
+				"label": "BlueArchiveServer Win64 Development Build",
+				"group": "build",
+				"command": "Engine\\Build\\BatchFiles\\Build.bat",
+				"args": [
+					"BlueArchiveServer",
+					"Win64",
+					"Development",
+					"E:\\Unreal_Project\\BlueArchive\\BlueArchive.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"type": "shell",
+				"options": {
+					"cwd": "E:\\UE_5.7"
+				}
+			},
+			{
+				"label": "BlueArchiveServer Win64 Development Rebuild",
+				"group": "build",
+				"command": "Engine\\Build\\BatchFiles\\Build.bat",
+				"args": [
+					"BlueArchiveServer",
+					"Win64",
+					"Development",
+					"E:\\Unreal_Project\\BlueArchive\\BlueArchive.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"dependsOn": [
+					"BlueArchiveServer Win64 Development Clean"
+				],
+				"type": "shell",
+				"options": {
+					"cwd": "E:\\UE_5.7"
+				}
+			},
+			{
+				"label": "BlueArchiveServer Win64 Development Clean",
+				"group": "build",
+				"command": "Engine\\Build\\BatchFiles\\Clean.bat",
+				"args": [
+					"BlueArchiveServer",
+					"Win64",
+					"Development",
+					"E:\\Unreal_Project\\BlueArchive\\BlueArchive.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"type": "shell",
+				"options": {
+					"cwd": "E:\\UE_5.7"
+				}
+			},
+			{
+				"label": "BlueArchiveServer Win64 Test Build",
+				"group": "build",
+				"command": "Engine\\Build\\BatchFiles\\Build.bat",
+				"args": [
+					"BlueArchiveServer",
+					"Win64",
+					"Test",
+					"E:\\Unreal_Project\\BlueArchive\\BlueArchive.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"type": "shell",
+				"options": {
+					"cwd": "E:\\UE_5.7"
+				}
+			},
+			{
+				"label": "BlueArchiveServer Win64 Test Rebuild",
+				"group": "build",
+				"command": "Engine\\Build\\BatchFiles\\Build.bat",
+				"args": [
+					"BlueArchiveServer",
+					"Win64",
+					"Test",
+					"E:\\Unreal_Project\\BlueArchive\\BlueArchive.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"dependsOn": [
+					"BlueArchiveServer Win64 Test Clean"
+				],
+				"type": "shell",
+				"options": {
+					"cwd": "E:\\UE_5.7"
+				}
+			},
+			{
+				"label": "BlueArchiveServer Win64 Test Clean",
+				"group": "build",
+				"command": "Engine\\Build\\BatchFiles\\Clean.bat",
+				"args": [
+					"BlueArchiveServer",
+					"Win64",
+					"Test",
+					"E:\\Unreal_Project\\BlueArchive\\BlueArchive.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"type": "shell",
+				"options": {
+					"cwd": "E:\\UE_5.7"
+				}
+			},
+			{
+				"label": "BlueArchiveServer Win64 Shipping Build",
+				"group": "build",
+				"command": "Engine\\Build\\BatchFiles\\Build.bat",
+				"args": [
+					"BlueArchiveServer",
+					"Win64",
+					"Shipping",
+					"E:\\Unreal_Project\\BlueArchive\\BlueArchive.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"type": "shell",
+				"options": {
+					"cwd": "E:\\UE_5.7"
+				}
+			},
+			{
+				"label": "BlueArchiveServer Win64 Shipping Rebuild",
+				"group": "build",
+				"command": "Engine\\Build\\BatchFiles\\Build.bat",
+				"args": [
+					"BlueArchiveServer",
+					"Win64",
+					"Shipping",
+					"E:\\Unreal_Project\\BlueArchive\\BlueArchive.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"dependsOn": [
+					"BlueArchiveServer Win64 Shipping Clean"
+				],
+				"type": "shell",
+				"options": {
+					"cwd": "E:\\UE_5.7"
+				}
+			},
+			{
+				"label": "BlueArchiveServer Win64 Shipping Clean",
+				"group": "build",
+				"command": "Engine\\Build\\BatchFiles\\Clean.bat",
+				"args": [
+					"BlueArchiveServer",
+					"Win64",
+					"Shipping",
+					"E:\\Unreal_Project\\BlueArchive\\BlueArchive.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"type": "shell",
+				"options": {
+					"cwd": "E:\\UE_5.7"
+				}
 			}
 		]
 	},
@@ -587,6 +857,86 @@
 				"preLaunchTask": "BlueArchiveEditor Win64 Development Build",
 				"args": [
 					"E:\\Unreal_Project\\BlueArchive\\BlueArchive.uproject"
+				],
+				"cwd": "E:\\UE_5.7",
+				"stopAtEntry": false,
+				"console": "integratedTerminal",
+				"type": "cppvsdbg",
+				"visualizerFile": "E:\\UE_5.7\\Engine\\Extras\\VisualStudioDebugging\\Unreal.natvis",
+				"sourceFileMap": {
+					"D:\\build\\++UE5\\Sync": "E:\\UE_5.7"
+				}
+			},
+			{
+				"name": "Launch BlueArchiveServer (Debug)",
+				"request": "launch",
+				"program": "E:\\Unreal_Project\\BlueArchive\\Binaries\\Win64\\UnrealServer-Win64-Debug.exe",
+				"preLaunchTask": "BlueArchiveServer Win64 Debug Build",
+				"args": [
+				],
+				"cwd": "E:\\UE_5.7",
+				"stopAtEntry": false,
+				"console": "integratedTerminal",
+				"type": "cppvsdbg",
+				"visualizerFile": "E:\\UE_5.7\\Engine\\Extras\\VisualStudioDebugging\\Unreal.natvis",
+				"sourceFileMap": {
+					"D:\\build\\++UE5\\Sync": "E:\\UE_5.7"
+				}
+			},
+			{
+				"name": "Launch BlueArchiveServer (DebugGame)",
+				"request": "launch",
+				"program": "E:\\Unreal_Project\\BlueArchive\\Binaries\\Win64\\UnrealServer-Win64-DebugGame.exe",
+				"preLaunchTask": "BlueArchiveServer Win64 DebugGame Build",
+				"args": [
+				],
+				"cwd": "E:\\UE_5.7",
+				"stopAtEntry": false,
+				"console": "integratedTerminal",
+				"type": "cppvsdbg",
+				"visualizerFile": "E:\\UE_5.7\\Engine\\Extras\\VisualStudioDebugging\\Unreal.natvis",
+				"sourceFileMap": {
+					"D:\\build\\++UE5\\Sync": "E:\\UE_5.7"
+				}
+			},
+			{
+				"name": "Launch BlueArchiveServer (Development)",
+				"request": "launch",
+				"program": "E:\\Unreal_Project\\BlueArchive\\Binaries\\Win64\\UnrealServer.exe",
+				"preLaunchTask": "BlueArchiveServer Win64 Development Build",
+				"args": [
+				],
+				"cwd": "E:\\UE_5.7",
+				"stopAtEntry": false,
+				"console": "integratedTerminal",
+				"type": "cppvsdbg",
+				"visualizerFile": "E:\\UE_5.7\\Engine\\Extras\\VisualStudioDebugging\\Unreal.natvis",
+				"sourceFileMap": {
+					"D:\\build\\++UE5\\Sync": "E:\\UE_5.7"
+				}
+			},
+			{
+				"name": "Launch BlueArchiveServer (Test)",
+				"request": "launch",
+				"program": "E:\\Unreal_Project\\BlueArchive\\Binaries\\Win64\\UnrealServer-Win64-Test.exe",
+				"preLaunchTask": "BlueArchiveServer Win64 Test Build",
+				"args": [
+				],
+				"cwd": "E:\\UE_5.7",
+				"stopAtEntry": false,
+				"console": "integratedTerminal",
+				"type": "cppvsdbg",
+				"visualizerFile": "E:\\UE_5.7\\Engine\\Extras\\VisualStudioDebugging\\Unreal.natvis",
+				"sourceFileMap": {
+					"D:\\build\\++UE5\\Sync": "E:\\UE_5.7"
+				}
+			},
+			{
+				"name": "Launch BlueArchiveServer (Shipping)",
+				"request": "launch",
+				"program": "E:\\Unreal_Project\\BlueArchive\\Binaries\\Win64\\UnrealServer-Win64-Shipping.exe",
+				"preLaunchTask": "BlueArchiveServer Win64 Shipping Build",
+				"args": [
 				],
 				"cwd": "E:\\UE_5.7",
 				"stopAtEntry": false,
