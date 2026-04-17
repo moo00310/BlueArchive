@@ -5,6 +5,9 @@
 #include "CoreMinimal.h"
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "Struct/BAMailTypes.h"
+
+class ABAPlayerController;
+
 #include "BAMailSubsystem.generated.h"
 
 /** 새 메일이 수신될 때 UI에 알리는 델리게이트 */
@@ -54,6 +57,9 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "Mail")
 	FOnMailClaimed OnMailClaimed;
 
+	/** 로컬 PlayerController 등록 (BeginPlay에서 호출) */
+	void SetLocalPlayerController(ABAPlayerController* PC);
+
 private:
 	FBAMailItem* FindMailById(FGuid MailId);
 	const FBAMailItem* FindMailById(FGuid MailId) const;
@@ -61,4 +67,7 @@ private:
 	/** 로컬 수신함 */
 	UPROPERTY()
 	TArray<FBAMailItem> MailBox;
+
+	/** 로컬 PlayerController 약참조 (ClaimReward에서 RPC 호출용) */
+	TWeakObjectPtr<ABAPlayerController> LocalPC;
 };

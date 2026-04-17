@@ -19,10 +19,10 @@ struct FUIAtlasSprite
     FName Name;
 
     UPROPERTY(EditAnywhere, BlueprintReadOnly)
-    FVector2D UV_Min;
+    FVector2D UV_Min = FVector2D::ZeroVector;
 
     UPROPERTY(EditAnywhere, BlueprintReadOnly)
-    FVector2D UV_Max;
+    FVector2D UV_Max = FVector2D::ZeroVector;
 };
 
 

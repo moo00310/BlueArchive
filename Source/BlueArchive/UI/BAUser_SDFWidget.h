@@ -5,7 +5,6 @@
 #include "CoreMinimal.h"
 #include "UI/BAUserWidget.h"
 #include "Components/Image.h"
-#include "Blueprint/WidgetLayoutLibrary.h"
 #include "BAUser_SDFWidget.generated.h"
 
 /**
@@ -19,8 +18,10 @@ class BLUEARCHIVE_API UBAUser_SDFWidget : public UBAUserWidget
 public:
 	virtual void NativeConstruct() override;
 	virtual void NativePreConstruct() override;
-	virtual void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;
 	virtual void SynchronizeProperties() override;
+	virtual int32 NativePaint(const FPaintArgs& Args, const FGeometry& AllottedGeometry,
+		const FSlateRect& MyCullingRect, FSlateWindowElementList& OutDrawElements,
+		int32 LayerId, const FWidgetStyle& InWidgetStyle, bool bParentEnabled) const override;
 public:
 	UFUNCTION(BlueprintCallable)
 	void SetHalfSize(float InValue);
@@ -33,7 +34,6 @@ public:
 
 private:
 	float GetScaledHalfSize() const;
-	float CachedDPIScale = 1.f;
 
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SDF", meta = (ClampMin = "0.0"))

@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "UI/BAUserWidget.h"
 #include "Components/TextBlock.h"
+#include "Components/OverlaySlot.h"
 #include "SubSystem/BAResourceTypes.h"
 #include "BASDFValueLabelWidget.generated.h"
 
@@ -22,6 +23,7 @@ class BLUEARCHIVE_API UBASDFValueLabelWidget : public UBAUserWidget
 protected:
 	virtual void NativeConstruct() override;
 	virtual void NativeDestruct() override;
+	virtual void SynchronizeProperties() override;
 
 private:
 	UFUNCTION()
@@ -33,6 +35,8 @@ private:
 
 	/** 서브시스템 기준으로 타입에 맞게 텍스트 갱신 */
 	void UpdateDisplay();
+	/** 폰트 사이즈 / 정렬 오버라이드 적용 */
+	void ApplyTextOverrides();
 
 private:
 	// 리소스 서브시스템 참조
@@ -47,6 +51,24 @@ protected:
 	/** 표시할 리소스 타입 (블루프린트에서 설정) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ValueLabel")
 	EResourceType ResourceType = EResourceType::Credit;
+
+	/** UserInfo가 아닐 때 적용할 텍스트 패딩 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ValueLabel|Layout")
+	FMargin TextPadding = FMargin(100.f, 0.f, 0.f, 0.f);
+
+	/** 폰트 사이즈 오버라이드 (0이면 UMG 기본값 유지) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ValueLabel|Layout")
+	int32 FontSizeOverride = 0;
+
+	/** 텍스트 가로 정렬 오버라이드 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ValueLabel|Layout")
+	TEnumAsByte<EHorizontalAlignment> HAlignOverride = HAlign_Fill;
+
+	/** 텍스트 세로 정렬 오버라이드 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ValueLabel|Layout")
+	TEnumAsByte<EVerticalAlignment> VAlignOverride = VAlign_Fill;
+
+
 
 public:
 	// 리소스 타입 설정 (런타임에 변경 가능)

@@ -6,6 +6,36 @@
 #include "Components/CanvasPanelSlot.h"
 #include "Engine/GameInstance.h"
 
+void UBASDFValueLabelWidget::SynchronizeProperties()
+{
+	Super::SynchronizeProperties();
+	ApplyTextOverrides();
+}
+
+void UBASDFValueLabelWidget::ApplyTextOverrides()
+{
+	if (!ValueTextBlock)
+		return;
+
+	if (FontSizeOverride > 0)
+	{
+		FSlateFontInfo FontInfo = ValueTextBlock->GetFont();
+		FontInfo.Size = FontSizeOverride;
+		ValueTextBlock->SetFont(FontInfo);
+	}
+
+	if (HAlignOverride != HAlign_Fill)
+		ValueTextBlock->SetJustification(HAlignOverride == HAlign_Left ? ETextJustify::Left :
+		                                 HAlignOverride == HAlign_Center ? ETextJustify::Center :
+		                                 ETextJustify::Right);
+
+	if (UOverlaySlot* OverlaySlot = Cast<UOverlaySlot>(ValueTextBlock->Slot))
+	{
+		if (HAlignOverride != HAlign_Fill) OverlaySlot->SetHorizontalAlignment(HAlignOverride);
+		if (VAlignOverride != VAlign_Fill) OverlaySlot->SetVerticalAlignment(VAlignOverride);
+	}
+}
+
 void UBASDFValueLabelWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
@@ -23,6 +53,8 @@ void UBASDFValueLabelWidget::NativeConstruct()
 			}
 			UpdateDisplay();
 		}
+
+	ApplyTextOverrides();
 	}
 }
 
@@ -100,6 +132,11 @@ void UBASDFValueLabelWidget::UpdateDisplay()
 	}
 
 	ValueTextBlock->SetText(FormattedText);
+
+	if (UOverlaySlot* OverlaySlot = Cast<UOverlaySlot>(ValueTextBlock->Slot))
+	{
+		OverlaySlot->SetPadding(ResourceType == EResourceType::UserInfo ? FMargin(0.f) : TextPadding);
+	}
 }
 
 void UBASDFValueLabelWidget::SetResourceType(EResourceType NewResourceType)

@@ -32,13 +32,13 @@ struct FCharacterRow : public FTableRowBase
     FText DisplayName;
 
     UPROPERTY(EditAnywhere, BlueprintReadOnly)
-    EAttackType AttackType;
+    EAttackType AttackType = EAttackType::EXPLOSION;
 
     UPROPERTY(EditAnywhere, BlueprintReadOnly)
-    EDefenseType DefenseType;
+    EDefenseType DefenseType = EDefenseType::EXPLOSION_Def;
 
     UPROPERTY(EditAnywhere, BlueprintReadOnly)
-    EPosRoleType PositionType;
+    EPosRoleType PositionType = EPosRoleType::FRONT;
 
     UPROPERTY(EditAnywhere, BlueprintReadOnly)
     FBaseStats Base;
