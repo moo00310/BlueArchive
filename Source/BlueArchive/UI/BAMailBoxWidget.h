@@ -66,6 +66,6 @@ private:
 	// ───── 에디터 설정 ─────
 
 	/** 메일 1행 위젯 클래스 (WBP_MailItemWidget 지정) */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Mail")
+	UPROPERTY(EditAnywhere, Category = "Mail")
 	TSubclassOf<UBAMailItemWidget> MailItemWidgetClass;
 };

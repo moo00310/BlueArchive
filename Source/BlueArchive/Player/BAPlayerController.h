@@ -7,6 +7,8 @@
 #include "Engine/StreamableManager.h"
 #include "UI/UIEnumTypes.h"
 #include "Struct/BAMailTypes.h"
+#include "SubSystem/BAResourceTypes.h"
+#include "Character/CharacterStructData.h"
 #include "BAPlayerController.generated.h"
 
 class ABAPreviewCharacter;
@@ -45,6 +47,10 @@ public:
 	/** 서버 → 클라이언트: 보상 실제 지급 */
 	UFUNCTION(Client, Reliable)
 	void ClientApplyMailReward(FGuid MailId, const TArray<FBAMailReward>& Rewards);
+
+	/** 서버 → 클라이언트: 접속 시 플레이어 전체 데이터 초기화 */
+	UFUNCTION(Client, Reliable)
+	void ClientInitPlayerData(const TArray<FBAResourceEntry>& Resources, const FString& UserName, int32 UserLevel, const TArray<FOwnedCharacter>& Characters);
 
 	// ────────────────────────
 

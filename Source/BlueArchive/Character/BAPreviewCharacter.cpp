@@ -41,11 +41,15 @@ void ABAPreviewCharacter::Init(USkeletalMesh* Mesh, UTextureRenderTarget2D* View
     CaptureColor->ShowOnlyComponent(Skel);
     CaptureColor->CaptureSource = SCS_FinalColorHDR;
 
-    // 포스트프로세스를 제거하고 게임 기본 ShowFlags로 초기화
     CaptureColor->ShowFlags = FEngineShowFlags(EShowFlagInitMode::ESFIM_Game);
-    CaptureColor->ShowFlags.SetPostProcessing(false); // 기본값이 true이므로 명시적으로 비활성화
+    CaptureColor->ShowFlags.SetPostProcessing(false);
+    // TSR/TAA가 프레임마다 서브픽셀 지터를 걸어 엣지가 이글거리는 원인.
+    // SetPostProcessing(false)로도 완전히 꺼지지 않으므로 명시적으로 비활성화.
+    CaptureColor->ShowFlags.SetAntiAliasing(false);
+    CaptureColor->ShowFlags.SetTemporalAA(false);
+    CaptureColor->ShowFlags.SetMotionBlur(false);
 
-    // 노출 고정 (자동노출로 인한 밝기 변화 방지)
+    // 노출 고정
     CaptureColor->PostProcessSettings.bOverride_AutoExposureMinBrightness = true;
     CaptureColor->PostProcessSettings.bOverride_AutoExposureMaxBrightness = true;
     CaptureColor->PostProcessSettings.AutoExposureMinBrightness = 1.0f;
@@ -60,6 +64,10 @@ void ABAPreviewCharacter::Init(USkeletalMesh* Mesh, UTextureRenderTarget2D* View
 
     CaptureMask->ShowFlags = FEngineShowFlags(EShowFlagInitMode::ESFIM_Game);
     CaptureMask->ShowFlags.SetPostProcessing(true);
+    // Color와 Mask 두 캡처의 AA 상태가 다르면 엣지가 프레임마다 어긋나 shimmer 발생
+    CaptureMask->ShowFlags.SetAntiAliasing(false);
+    CaptureMask->ShowFlags.SetTemporalAA(false);
+    CaptureMask->ShowFlags.SetMotionBlur(false);
 
     if (!PP_StencilToAlpha_MID)
         PP_StencilToAlpha_MID = UMaterialInstanceDynamic::Create(PP_StencilToAlpha_Mat, this);
