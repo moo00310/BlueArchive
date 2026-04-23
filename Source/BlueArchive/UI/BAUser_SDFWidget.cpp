@@ -16,16 +16,17 @@ void UBAUser_SDFWidget::NativeConstruct()
 	
 }
 
-void UBAUser_SDFWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
+int32 UBAUser_SDFWidget::NativePaint(const FPaintArgs& Args, const FGeometry& AllottedGeometry,
+	const FSlateRect& MyCullingRect, FSlateWindowElementList& OutDrawElements,
+	int32 LayerId, const FWidgetStyle& InWidgetStyle, bool bParentEnabled) const
 {
-	Super::NativeTick(MyGeometry, InDeltaTime);
-
-	const float CurrentDPI = UWidgetLayoutLibrary::GetViewportScale(GetWorld());
-	if (!FMath::IsNearlyEqual(CurrentDPI, CachedDPIScale, 0.001f))
+	const FVector2D Size = AllottedGeometry.GetLocalSize();
+	if (MID)
 	{
-		CachedDPIScale = CurrentDPI;
-		UpdateMaterialFromDesigner();
+		MID->SetVectorParameterValue(TEXT("WidgetSize"), FLinearColor(Size.X, Size.Y, 0, 0));
 	}
+	return Super::NativePaint(Args, AllottedGeometry, MyCullingRect, OutDrawElements,
+		LayerId, InWidgetStyle, bParentEnabled);
 }
 
 void UBAUser_SDFWidget::NativePreConstruct()
@@ -46,8 +47,7 @@ void UBAUser_SDFWidget::SynchronizeProperties()
 
 float UBAUser_SDFWidget::GetScaledHalfSize() const
 {
-	const float DPIScale = UWidgetLayoutLibrary::GetViewportScale(GetWorld());
-	return HalfSizePx * DPIScale;
+	return HalfSizePx;
 }
 
 void UBAUser_SDFWidget::SetHalfSize(float HalfSizeXPx)
@@ -64,30 +64,28 @@ void UBAUser_SDFWidget::SetHalfSize(float HalfSizeXPx)
 
 void UBAUser_SDFWidget::SetTintStrength(float TintStrength)
 {
+	fTintStrength = TintStrength;
+
 	if (!SDF_Image)
 		return;
 
 	if (!MID)
 		MID = SDF_Image->GetDynamicMaterial();
 
-	MID->SetScalarParameterValue(
-		TEXT("TintStrength"),
-		TintStrength
-	);
+	MID->SetScalarParameterValue(TEXT("TintStrength"), fTintStrength);
 }
 
 void UBAUser_SDFWidget::SetColorAdd(FLinearColor vColor)
 {
+	vAddColor = vColor;
+
 	if (!SDF_Image)
 		return;
 
 	if (!MID)
 		MID = SDF_Image->GetDynamicMaterial();
 
-	MID->SetVectorParameterValue(
-		TEXT("AddColor"),
-		vColor
-	);
+	MID->SetVectorParameterValue(TEXT("AddColor"), vAddColor);
 }
 
 void UBAUser_SDFWidget::UpdateMaterialFromDesigner()
@@ -101,7 +99,7 @@ void UBAUser_SDFWidget::UpdateMaterialFromDesigner()
 	if (!MID)
 		return;
 
-	FVector2D Size(100.f, 50.f); // �⺻��
+	FVector2D Size(100.f, 50.f); // 기본값
 
 	if (UCanvasPanelSlot* CanvasSlot = Cast<UCanvasPanelSlot>(SDF_Image->Slot))
 	{

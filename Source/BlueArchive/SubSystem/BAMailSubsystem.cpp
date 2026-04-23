@@ -54,15 +54,17 @@ void UBAMailSubsystem::ApplyRewardsLocally(FGuid MailId, const TArray<FBAMailRew
 
 // ───── UI에서 호출 ─────
 
+void UBAMailSubsystem::SetLocalPlayerController(ABAPlayerController* PC)
+{
+	LocalPC = PC;
+}
+
 void UBAMailSubsystem::ClaimReward(FGuid MailId)
 {
 	FBAMailItem* Found = FindMailById(MailId);
 	if (!Found || Found->bClaimed) return;
 
-	ABAPlayerController* PC = Cast<ABAPlayerController>(
-		GetGameInstance()->GetFirstLocalPlayerController(GetWorld())
-	);
-
+	ABAPlayerController* PC = LocalPC.Get();
 	if (PC)
 	{
 		PC->ServerClaimMailReward(MailId);

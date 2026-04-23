@@ -12,10 +12,11 @@
 UENUM(BlueprintType)
 enum class EUIScreen : uint8
 {
-	MAIN    UMETA(DisplayName = "Main"),
-	CONTENTS  UMETA(DisplayName = "Contents"),
-	SELECT  UMETA(DisplayName = "Select"),
-	BATTLE  UMETA(DisplayName = "Battle"),
+	MAIN     UMETA(DisplayName = "Main"),
+	CONTENTS UMETA(DisplayName = "Contents"),
+	SELECT   UMETA(DisplayName = "Select"),
+	BATTLE   UMETA(DisplayName = "Battle"),
+	MAIL     UMETA(DisplayName = "Mail"),
 	END      UMETA(Hidden)
 };
 

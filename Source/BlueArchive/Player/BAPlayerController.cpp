@@ -5,6 +5,7 @@
 #include "Character/BAPreviewCharacter.h"
 #include "SubSystem/BACharacterDataSubsystem.h"
 #include "SubSystem/BAResourceSubsystem.h"
+#include "SubSystem/BAPartySubsystem.h"
 #include "SubSystem/BAMailSubsystem.h"
 #include "Game/BAGameModeBase.h"
 #include "Game/BAGameInstance.h"
@@ -53,14 +54,38 @@ void ABAPlayerController::BeginPlay()
 		}
 
 		// 서버에 UID 등록 요청
-		if (UBAResourceSubsystem* ResSub = GetGameInstance()->GetSubsystem<UBAResourceSubsystem>())
+		// UID는 BAPartySubsystem이 PIEInstance 기반으로 슬롯을 구분해서 관리한다.
+		if (UBAPartySubsystem* PartySub = GetGameInstance()->GetSubsystem<UBAPartySubsystem>())
 		{
-			ServerRegisterUID(ResSub->GetPlayerUID());
+			ServerRegisterUID(PartySub->GetPlayerUID());
+		}
+
+		// 로컬 PC를 MailSubsystem에 등록 (ClaimReward RPC 호출용)
+		if (UBAMailSubsystem* MailSub = GetGameInstance()->GetSubsystem<UBAMailSubsystem>())
+		{
+			MailSub->SetLocalPlayerController(this);
 		}
 
 		PreviewActors.SetNum(2);
 		PreviewLoadHandles.SetNum(2);
 		PreviewRequestSerials.SetNum(2);
+
+#if WITH_EDITOR
+		// 테스트용: 3초 뒤 수신함 첫 번째 메일 보상 자동 수령
+		FTimerHandle TestClaimTimer;
+		GetWorldTimerManager().SetTimer(TestClaimTimer, [this]()
+		{
+			if (UBAMailSubsystem* MailSub = GetGameInstance()->GetSubsystem<UBAMailSubsystem>())
+			{
+				const TArray<FBAMailItem>& Box = MailSub->GetMailBox();
+				if (Box.Num() > 0)
+				{
+					UE_LOG(LogTemp, Log, TEXT("[Test] ClaimReward 호출 - MailId: %s"), *Box[0].MailId.ToString());
+					MailSub->ClaimReward(Box[0].MailId);
+				}
+			}
+		}, 3.0f, false);
+#endif
 	}
 }
 
@@ -181,6 +206,15 @@ void ABAPlayerController::ClientApplyMailReward_Implementation(FGuid MailId, con
 	{
 		MailSub->ApplyRewardsLocally(MailId, Rewards);
 	}
+}
+
+void ABAPlayerController::ClientInitPlayerData_Implementation(const TArray<FBAResourceEntry>& Resources, const FString& UserName, int32 UserLevel, const TArray<FOwnedCharacter>& Characters)
+{
+	if (UBAResourceSubsystem* ResSub = GetGameInstance()->GetSubsystem<UBAResourceSubsystem>())
+		ResSub->InitializeFromServer(Resources, UserName, UserLevel);
+
+	if (UBACharacterDataSubsystem* CharSub = GetGameInstance()->GetSubsystem<UBACharacterDataSubsystem>())
+		CharSub->InitializeFromServer(Characters);
 }
 
 void ABAPlayerController::OnUIScreenChanged(EUIScreen Prev, EUIScreen Next)

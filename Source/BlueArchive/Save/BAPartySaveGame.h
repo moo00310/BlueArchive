@@ -24,8 +24,9 @@ class BLUEARCHIVE_API UBAPartySaveGame : public USaveGame
 {
     GENERATED_BODY()
 public:
+    /** 이 클라이언트의 플레이어 고유 식별자 - 최초 실행 시 자동 발급 */
     UPROPERTY(SaveGame)
-    int32 Gold = 0;
+    FString PlayerUID = TEXT("");
 
     /** 파티 프리셋 4개. 각 프리셋은 캐릭터 3명 */
     UPROPERTY(SaveGame)

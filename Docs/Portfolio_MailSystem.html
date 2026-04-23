@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>서버 메일 보상 시스템 — 포트폴리오</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', sans-serif;
+    background: #f5f5f5;
+    color: #222;
+    padding: 40px 20px;
+  }
+  .container {
+    max-width: 900px;
+    margin: 0 auto;
+  }
+  h1 {
+    font-size: 26px;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+  .subtitle {
+    font-size: 15px;
+    color: #666;
+    margin-bottom: 40px;
+    padding: 12px 16px;
+    background: #fff;
+    border-left: 4px solid #4A90D9;
+    border-radius: 4px;
+  }
+  h2 {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 16px;
+    padding-bottom: 6px;
+    border-bottom: 2px solid #e0e0e0;
+  }
+  .section {
+    background: #fff;
+    border-radius: 10px;
+    padding: 28px 32px;
+    margin-bottom: 28px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  }
+  .diagram-wrap {
+    overflow-x: auto;
+    margin-top: 8px;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 8px;
+    font-size: 14px;
+  }
+  th {
+    background: #f0f4fa;
+    padding: 10px 14px;
+    text-align: left;
+    font-weight: 600;
+    border-bottom: 2px solid #dde3ef;
+  }
+  td {
+    padding: 10px 14px;
+    border-bottom: 1px solid #eee;
+    vertical-align: top;
+  }
+  tr:last-child td { border-bottom: none; }
+  .tag {
+    display: inline-block;
+    background: #e8f0fe;
+    color: #3a5fcd;
+    font-size: 12px;
+    padding: 2px 8px;
+    border-radius: 12px;
+    margin: 2px 2px 2px 0;
+  }
+  .point-list {
+    list-style: none;
+    margin-top: 8px;
+  }
+  .point-list li {
+    padding: 10px 0;
+    border-bottom: 1px solid #f0f0f0;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+  .point-list li:last-child { border-bottom: none; }
+  .point-list li::before {
+    content: "▸ ";
+    color: #4A90D9;
+    font-weight: bold;
+  }
+  .badge {
+    display: inline-block;
+    background: #4A90D9;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 4px;
+    margin-right: 6px;
+  }
+  code {
+    background: #f0f4fa;
+    padding: 1px 6px;
+    border-radius: 3px;
+    font-family: 'Consolas', monospace;
+    font-size: 13px;
+    color: #c7254e;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <h1>서버 메일 보상 시스템</h1>
+  <div class="subtitle">
+    데디케이트 서버가 보상 메일을 등록하면, 접속 중인 클라이언트에게 즉시 배포하고<br>
+    오프라인이었던 플레이어는 기간 내 재접속 시 자동으로 수신하는 시스템.
+  </div>
+
+  <!-- 메인 RPC 흐름 -->
+  <div class="section">
+    <h2>전체 RPC 흐름</h2>
+    <div class="diagram-wrap">
+      <div class="mermaid">
+sequenceDiagram
+    participant GM as GameModeBase (서버)
+    participant PC as PlayerController
+    participant MS as MailSubsystem (클라이언트)
+    participant RS as ResourceSubsystem (클라이언트)
+
+    Note over GM: 서버 시작 — BeginPlay
+    GM->>GM: RegisterMail()<br/>ActiveMailList 저장
+
+    Note over PC: 플레이어 접속
+    PC->>GM: ServerRegisterUID() RPC
+    GM->>GM: UIDToController 등록
+    GM->>PC: ClientReceiveMail() RPC
+    PC->>MS: OnMailReceived()<br/>MailBox 저장
+
+    Note over MS: UI에서 수령 버튼
+    MS->>PC: ClaimReward()
+    PC->>GM: ServerClaimMailReward() RPC
+    GM->>GM: ProcessRewardClaim()<br/>① MailId 존재 확인<br/>② 만료 여부 확인<br/>③ 중복 수령 확인
+    GM->>PC: ClientApplyMailReward() RPC
+    PC->>MS: ApplyRewardsLocally()
+    MS->>RS: AddResource() — Credit +1000
+      </div>
+    </div>
+  </div>
+
+  <!-- 재접속 흐름 -->
+  <div class="section">
+    <h2>재접속 플레이어 메일 수신 흐름</h2>
+    <div class="diagram-wrap">
+      <div class="mermaid">
+flowchart TD
+    A([플레이어 재접속]) --> B[PostLogin 호출]
+    B --> C[ServerRegisterUID RPC 수신]
+    C --> D[RegisterPlayerUID\nUIDToController 등록]
+    D --> E{ActiveMailList 순회}
+    E --> F{만료 여부\nExpiresAt &gt; UtcNow?}
+    F -- 만료됨 --> G([전송 스킵])
+    F -- 유효 --> H{중복 수령 여부\nClaimedMap 확인}
+    H -- 이미 수령 --> G
+    H -- 미수령 --> I[ClientReceiveMail RPC 전송]
+    I --> J([클라이언트 수신함 저장])
+      </div>
+    </div>
+  </div>
+
+  <!-- 파일 역할 -->
+  <div class="section">
+    <h2>파일별 역할</h2>
+    <table>
+      <tr>
+        <th>클래스</th>
+        <th>실행 위치</th>
+        <th>단일 책임</th>
+      </tr>
+      <tr>
+        <td><code>BAGameModeBase</code></td>
+        <td>서버 전용</td>
+        <td>메일 등록 · 배포 · 수령 검증 · ClaimedMap 관리</td>
+      </tr>
+      <tr>
+        <td><code>BAPlayerController</code></td>
+        <td>서버 + 클라이언트</td>
+        <td>RPC 브릿지 · UID 등록</td>
+      </tr>
+      <tr>
+        <td><code>BAMailSubsystem</code></td>
+        <td>클라이언트 전용</td>
+        <td>수신함 보관 · 보상 요청 · 로컬 보상 적용</td>
+      </tr>
+      <tr>
+        <td><code>BAResourceSubsystem</code></td>
+        <td>클라이언트 전용</td>
+        <td>실제 재화 증감 · SaveGame 저장</td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- 어필 포인트 -->
+  <div class="section">
+    <h2>어필 포인트</h2>
+    <ul class="point-list">
+      <li>
+        <span class="badge">보안</span>
+        서버 권위(Server Authority) 기반 3단계 검증 — MailId 존재 확인, 만료 여부, 중복 수령 방지.
+        클라이언트가 <code>bClaimed</code>를 조작해도 서버 <code>ClaimedMap</code>에서 차단.
+      </li>
+      <li>
+        <span class="badge">설계</span>
+        오프라인 플레이어 재접속 처리 — 단순 Multicast로 끝내지 않고 <code>ActiveMailList</code>를 서버에 보관해 기간 내 재접속 시 자동 수신.
+      </li>
+      <li>
+        <span class="badge">성능</span>
+        O(1) 역방향 맵 — <code>UIDToController</code> + <code>ControllerToUID</code> 양방향 맵으로 선형 탐색 제거.
+      </li>
+      <li>
+        <span class="badge">문제해결</span>
+        <code>UGameInstanceSubsystem</code>의 <code>GetWorld()</code> 한계 — PIE에서 null 반환 문제를 <code>TWeakObjectPtr</code> 기반 LocalPC 등록으로 해결.
+      </li>
+      <li>
+        <span class="badge">구조</span>
+        관심사 분리(SoC) — GameMode는 서버 로직만, MailSubsystem은 클라이언트 수신함만 담당. 레이어 간 의존성 최소화.
+      </li>
+    </ul>
+  </div>
+
+  <!-- 기술 키워드 -->
+  <div class="section">
+    <h2>기술 키워드</h2>
+    <div style="margin-top:8px; line-height:2.2">
+      <span class="tag">Unreal Engine 5</span>
+      <span class="tag">C++</span>
+      <span class="tag">Dedicated Server</span>
+      <span class="tag">Server RPC</span>
+      <span class="tag">Client RPC</span>
+      <span class="tag">WithValidation</span>
+      <span class="tag">UGameInstanceSubsystem</span>
+      <span class="tag">TWeakObjectPtr</span>
+      <span class="tag">FGuid</span>
+      <span class="tag">Server Authority</span>
+      <span class="tag">TMap 역방향 맵</span>
+    </div>
+  </div>
+
+</div>
+<script>
+  mermaid.initialize({ startOnLoad: true, theme: 'default' });
+</script>
+</body>
+</html>

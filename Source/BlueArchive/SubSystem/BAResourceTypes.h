@@ -22,3 +22,15 @@ enum class EResourceType : uint8
 	UserInfo	UMETA(DisplayName = "UserInfo"),      // 유저 정보 (Level / Name)
 	END			UMETA(Hidden)
 };
+
+USTRUCT(BlueprintType)
+struct FBAResourceEntry
+{
+	GENERATED_BODY()
+
+	UPROPERTY()
+	EResourceType ResourceType = EResourceType::Credit;
+
+	UPROPERTY()
+	int32 Amount = 0;
+};

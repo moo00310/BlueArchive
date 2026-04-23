@@ -4,6 +4,22 @@
 #include "Kismet/GameplayStatics.h"
 #include "TimerManager.h"
 
+void UBASaveGameSubsystem::Initialize(FSubsystemCollectionBase& Collection)
+{
+	Super::Initialize(Collection);
+
+#if WITH_EDITOR
+	for (const FWorldContext& Context : GEngine->GetWorldContexts())
+	{
+		if (Context.OwningGameInstance == GetGameInstance())
+		{
+			UserIndex = Context.PIEInstance;
+			break;
+		}
+	}
+#endif
+}
+
 void UBASaveGameSubsystem::Deinitialize()
 {
 	if (bDirty)

@@ -1,10 +1,19 @@
 {
   "permissions": {
     "allow": [
+      "Bash",
+      "Read(e:/Unreal_Project/BlueArchive/**)",
+      "Edit(e:/Unreal_Project/BlueArchive/**)",
+      "Write(e:/Unreal_Project/BlueArchive/**)",
       "mcp__unrealClaude__unreal_ue",
       "mcp__unrealClaude__unreal_blueprint_query",
       "mcp__unrealClaude__unreal_get_ue_context",
-      "mcp__unrealClaude__unreal_get_output_log"
+      "mcp__unrealClaude__unreal_get_output_log",
+      "Read(//d//**)",
+      "Read(//e/Epic Games/**)",
+      "Bash(echo \"exit: $?\")",
+      "Bash(cmd.exe /c '\"E:\\\\UE_5.7\\\\Engine\\\\Binaries\\\\DotNET\\\\UnrealBuildTool\\\\UnrealBuildTool.exe\" -projectfiles -project=\"E:\\\\Unreal_Project\\\\BlueArchive\\\\BlueArchive.uproject\" -vscode -game 2>&1')",
+      "Bash(cmd.exe /c \"E:\\\\UE_5.7\\\\Engine\\\\Binaries\\\\DotNET\\\\UnrealBuildTool\\\\UnrealBuildTool.exe -mode=GenerateProjectFiles -project=\\\\\"E:\\\\Unreal_Project\\\\BlueArchive\\\\BlueArchive.uproject\\\\\" -VSCode -game\")"
     ]
   }
 }
