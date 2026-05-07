@@ -20,11 +20,13 @@ class BLUEARCHIVE_API ABAGameModeBase : public AGameModeBase
 public:
 	ABAGameModeBase();
 
+	virtual void InitGame(const FString& MapName, const FString& Options, FString& ErrorMessage) override;
 	virtual void BeginPlay() override;
+	virtual void PreLogin(const FString& Options, const FString& Address, const FUniqueNetIdRepl& UniqueId, FString& ErrorMessage) override;
 	virtual void PostLogin(APlayerController* NewPlayer) override;
 	virtual void Logout(AController* Exiting) override;
 
-	void RegisterPlayerUID(ABAPlayerController* PC, const FString& UID);
+	void RegisterPlayerUID(ABAPlayerController* PC, const FString& UID, const FString& Nickname);
 	ABAPlayerController* FindControllerByUID(const FString& UID) const;
 
 	// ───── 메일 배포 ─────
@@ -58,6 +60,10 @@ protected:
 	/** 전체 플레이어 캐릭터 데이터 (BA_CharacterSlot_Server.sav) */
 	UPROPERTY()
 	TObjectPtr<UBACharacterServerSaveGame> CharacterServerSave;
+
+	/** 메일 수령 이력 (BA_MailSlot_Server.sav) */
+	UPROPERTY()
+	TObjectPtr<UBAMailServerSaveGame> MailServerSave;
 
 private:
 	void LoadServerSaves();

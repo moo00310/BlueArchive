@@ -5,7 +5,6 @@
 #include "Character/BAPreviewCharacter.h"
 #include "SubSystem/BACharacterDataSubsystem.h"
 #include "SubSystem/BAResourceSubsystem.h"
-#include "SubSystem/BAPartySubsystem.h"
 #include "SubSystem/BAMailSubsystem.h"
 #include "Game/BAGameModeBase.h"
 #include "Game/BAGameInstance.h"
@@ -48,17 +47,18 @@ void ABAPlayerController::BeginPlay()
 
 		if (BAUIManager)
 		{
-			// 화면 전환 이벤트에 게임 로직 바인딩 (UIManager는 UI만 담당)
 			BAUIManager->OnScreenChanged.AddUObject(this, &ABAPlayerController::OnUIScreenChanged);
-			BAUIManager->ShowScreen(EUIScreen::MAIN);
+
+			// Connect 버튼으로 접속 중인 경우에만 LOGIN 스킵 — ClientInitPlayerData가 MAIN으로 전환
+			UBAGameInstance* GI = Cast<UBAGameInstance>(GetGameInstance());
+			const bool bSkip = GI && GI->bIsConnectingToServer;
+			UE_LOG(LogTemp, Warning, TEXT("[PC] BeginPlay - bIsConnectingToServer=%d, bSkip=%d"), GI ? (int)GI->bIsConnectingToServer : -1, (int)bSkip);
+			if (!bSkip)
+				BAUIManager->ShowScreen(EUIScreen::LOGIN);
 		}
 
-		// 서버에 UID 등록 요청
-		// UID는 BAPartySubsystem이 PIEInstance 기반으로 슬롯을 구분해서 관리한다.
-		if (UBAPartySubsystem* PartySub = GetGameInstance()->GetSubsystem<UBAPartySubsystem>())
-		{
-			ServerRegisterUID(PartySub->GetPlayerUID());
-		}
+		// UID 등록은 서버 PostLogin에서 닉네임 기반으로 처리
+		// ClientInitPlayerData 수신 후 MAIN 화면으로 자동 전환
 
 		// 로컬 PC를 MailSubsystem에 등록 (ClaimReward RPC 호출용)
 		if (UBAMailSubsystem* MailSub = GetGameInstance()->GetSubsystem<UBAMailSubsystem>())
@@ -87,6 +87,16 @@ void ABAPlayerController::BeginPlay()
 		}, 3.0f, false);
 #endif
 	}
+}
+
+void ABAPlayerController::ConnectToServer(const FString& Nickname, const FString& ServerIP)
+{
+	if (UBAGameInstance* GI = Cast<UBAGameInstance>(GetGameInstance()))
+		GI->bIsConnectingToServer = true;
+
+	const FString URL = ServerIP + TEXT("?Name=") + Nickname;
+	UE_LOG(LogTemp, Warning, TEXT("[Login] ClientTravel → %s"), *URL);
+	ClientTravel(URL, TRAVEL_Absolute);
 }
 
 ABAPreviewCharacter* ABAPlayerController::EnsurePreviewActor(int32 index)
@@ -163,20 +173,6 @@ void ABAPlayerController::SetPreviewSlotPressed(int32 Index, bool bPressed)
 	PreviewActors[Index]->SetPreviewPressed(bPressed);
 }
 
-bool ABAPlayerController::ServerRegisterUID_Validate(const FString& UID)
-{
-	// 비어 있거나 비정상적으로 긴 UID는 거부
-	return !UID.IsEmpty() && UID.Len() <= 64;
-}
-
-void ABAPlayerController::ServerRegisterUID_Implementation(const FString& UID)
-{
-	if (ABAGameModeBase* GM = GetWorld()->GetAuthGameMode<ABAGameModeBase>())
-	{
-		GM->RegisterPlayerUID(this, UID);
-	}
-}
-
 // ───── 메일 RPC 구현 ─────
 
 void ABAPlayerController::ClientReceiveMail_Implementation(const FBAMailItem& MailItem)
@@ -215,6 +211,10 @@ void ABAPlayerController::ClientInitPlayerData_Implementation(const TArray<FBARe
 
 	if (UBACharacterDataSubsystem* CharSub = GetGameInstance()->GetSubsystem<UBACharacterDataSubsystem>())
 		CharSub->InitializeFromServer(Characters);
+
+	// 서버 데이터 수신 완료 → 메인 화면 전환
+	if (BAUIManager)
+		BAUIManager->ShowScreen(EUIScreen::MAIN);
 }
 
 void ABAPlayerController::OnUIScreenChanged(EUIScreen Prev, EUIScreen Next)

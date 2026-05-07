@@ -4,6 +4,11 @@
 #include "SubSystem/BAResourceSubsystem.h"
 #include "Player/BAPlayerController.h"
 
+bool UBAMailSubsystem::ShouldCreateSubsystem(UObject* Outer) const
+{
+	return Super::ShouldCreateSubsystem(Outer) && !IsRunningDedicatedServer();
+}
+
 // ───── 내부 헬퍼 ─────
 
 FBAMailItem* UBAMailSubsystem::FindMailById(FGuid MailId)

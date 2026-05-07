@@ -27,6 +27,8 @@ class BLUEARCHIVE_API UBAMailSubsystem : public UGameInstanceSubsystem
 	GENERATED_BODY()
 
 public:
+	virtual bool ShouldCreateSubsystem(UObject* Outer) const override;
+
 	// ───── PlayerController RPC에서 호출 ─────
 
 	/** 서버로부터 메일 수신 시 호출 (ClientReceiveMail_Implementation에서 호출) */

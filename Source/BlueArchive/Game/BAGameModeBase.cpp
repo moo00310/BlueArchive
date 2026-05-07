@@ -6,9 +6,11 @@
 #include "Character/CharacterStructData.h"
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/GameStateBase.h"
+#include "GameFramework/PlayerState.h"
 
 static const FString ResServerSlot    = TEXT("BA_ResourceSlot_Server");
 static const FString CharServerSlot   = TEXT("BA_CharacterSlot_Server");
+static const FString MailServerSlot   = TEXT("BA_MailSlot_Server");
 
 ABAGameModeBase::ABAGameModeBase()
 {
@@ -17,11 +19,15 @@ ABAGameModeBase::ABAGameModeBase()
 		PlayerControllerClass = PlayterControllerClassRef.Class;
 }
 
+void ABAGameModeBase::InitGame(const FString& MapName, const FString& Options, FString& ErrorMessage)
+{
+	Super::InitGame(MapName, Options, ErrorMessage);
+	LoadServerSaves();
+}
+
 void ABAGameModeBase::BeginPlay()
 {
 	Super::BeginPlay();
-
-	LoadServerSaves();
 
 #if WITH_EDITOR
 	FBAMailItem TestMail;
@@ -38,9 +44,40 @@ void ABAGameModeBase::BeginPlay()
 #endif
 }
 
+void ABAGameModeBase::PreLogin(const FString& Options, const FString& Address, const FUniqueNetIdRepl& UniqueId, FString& ErrorMessage)
+{
+	Super::PreLogin(Options, Address, UniqueId, ErrorMessage);
+	if (!ErrorMessage.IsEmpty()) return;
+
+#if !WITH_EDITOR
+	const FString Name = UGameplayStatics::ParseOption(Options, TEXT("Name"));
+	if (Name.IsEmpty())
+		ErrorMessage = TEXT("닉네임을 입력해주세요.");
+	else if (Name.Len() > 20)
+		ErrorMessage = TEXT("닉네임은 20자 이하여야 합니다.");
+#endif
+}
+
 void ABAGameModeBase::PostLogin(APlayerController* NewPlayer)
 {
 	Super::PostLogin(NewPlayer);
+
+	ABAPlayerController* PC = Cast<ABAPlayerController>(NewPlayer);
+	if (!PC || !NewPlayer->PlayerState) return;
+
+	FString Nickname = NewPlayer->PlayerState->GetPlayerName();
+	if (Nickname.IsEmpty())
+		Nickname = FString::Printf(TEXT("Player_%d"), NewPlayer->PlayerState->GetPlayerId());
+
+	// 닉네임으로 UID 조회, 없으면 신규 생성
+	FString& UID = ResourceServerSave->NicknameToUID.FindOrAdd(Nickname);
+	if (UID.IsEmpty())
+	{
+		UID = FGuid::NewGuid().ToString(EGuidFormats::DigitsWithHyphens);
+		SaveServerData();
+	}
+
+	RegisterPlayerUID(PC, UID, Nickname);
 }
 
 void ABAGameModeBase::Logout(AController* Exiting)
@@ -70,6 +107,22 @@ void ABAGameModeBase::LoadServerSaves()
 		CharacterServerSave = Cast<UBACharacterServerSaveGame>(UGameplayStatics::LoadGameFromSlot(CharServerSlot, 0));
 	if (!CharacterServerSave)
 		CharacterServerSave = Cast<UBACharacterServerSaveGame>(UGameplayStatics::CreateSaveGameObject(UBACharacterServerSaveGame::StaticClass()));
+
+	if (UGameplayStatics::DoesSaveGameExist(MailServerSlot, 0))
+		MailServerSave = Cast<UBAMailServerSaveGame>(UGameplayStatics::LoadGameFromSlot(MailServerSlot, 0));
+	if (!MailServerSave)
+		MailServerSave = Cast<UBAMailServerSaveGame>(UGameplayStatics::CreateSaveGameObject(UBAMailServerSaveGame::StaticClass()));
+
+	// 디스크 데이터 → ClaimedMap 복원
+	ClaimedMap.Reset();
+	for (const auto& Pair : MailServerSave->ClaimedData)
+	{
+		FGuid MailId;
+		if (!FGuid::Parse(Pair.Key, MailId)) continue;
+
+		TSet<FString>& NewSet = ClaimedMap.Add(MailId);
+		NewSet.Append(Pair.Value.ClaimedUIDs);
+	}
 }
 
 void ABAGameModeBase::SaveServerData()
@@ -78,6 +131,19 @@ void ABAGameModeBase::SaveServerData()
 		UGameplayStatics::SaveGameToSlot(ResourceServerSave, ResServerSlot, 0);
 	if (CharacterServerSave)
 		UGameplayStatics::SaveGameToSlot(CharacterServerSave, CharServerSlot, 0);
+
+	if (MailServerSave)
+	{
+		// ClaimedMap → 디스크 데이터 직렬화
+		MailServerSave->ClaimedData.Reset();
+		for (const auto& Pair : ClaimedMap)
+		{
+			FBAClaimedRecord Record;
+			Record.ClaimedUIDs = Pair.Value.Array();
+			MailServerSave->ClaimedData.Add(Pair.Key.ToString(), Record);
+		}
+		UGameplayStatics::SaveGameToSlot(MailServerSave, MailServerSlot, 0);
+	}
 }
 
 FBAPlayerResourceRecord& ABAGameModeBase::GetOrCreateResourceRecord(const FString& UID)
@@ -117,17 +183,21 @@ FBAPlayerCharacterRecord& ABAGameModeBase::GetOrCreateCharacterRecord(const FStr
 
 // ───── UID 등록 ─────
 
-void ABAGameModeBase::RegisterPlayerUID(ABAPlayerController* PC, const FString& UID)
+void ABAGameModeBase::RegisterPlayerUID(ABAPlayerController* PC, const FString& UID, const FString& Nickname)
 {
 	if (!PC || UID.IsEmpty()) return;
 
 	UIDToController.Add(UID, PC);
 	ControllerToUID.Add(PC, UID);
 
-	UE_LOG(LogTemp, Log, TEXT("[GameMode] Player registered - UID: %s"), *UID);
+	UE_LOG(LogTemp, Log, TEXT("[GameMode] Player registered - UID: %s, Nickname: %s"), *UID, *Nickname);
 
+	const bool bIsNewPlayer = (ResourceServerSave->PlayerData.Find(UID) == nullptr);
 	FBAPlayerResourceRecord&  ResRecord  = GetOrCreateResourceRecord(UID);
 	FBAPlayerCharacterRecord& CharRecord = GetOrCreateCharacterRecord(UID);
+
+	if (bIsNewPlayer && !Nickname.IsEmpty())
+		ResRecord.UserName = Nickname;
 
 	// 재화 RPC 데이터 구성
 	TArray<FBAResourceEntry> ResourceEntries;
