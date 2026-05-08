@@ -33,8 +33,11 @@ void UBALoginWidget::OnConnectClicked()
 	const FString Nickname = TB_Nickname->GetText().ToString().TrimStartAndEnd();
 	if (Nickname.IsEmpty()) return;
 
-	const FString ServerIP = TB_ServerIP ? TB_ServerIP->GetText().ToString().TrimStartAndEnd() : TEXT("127.0.0.1");
+	FString ServerIP = TB_ServerIP ? TB_ServerIP->GetText().ToString().TrimStartAndEnd() : TEXT("127.0.0.1:17777");
+	ServerIP.ReplaceInline(TEXT(" "), TEXT(""));  // 공백 제거 ("127.0.0.1 : 17777" 방지)
+	if (ServerIP.IsEmpty())
+		ServerIP = TEXT("127.0.0.1:17777");
 
 	if (ABAPlayerController* PC = GetCachedPlayerController())
-		PC->ConnectToServer(Nickname, ServerIP.IsEmpty() ? TEXT("127.0.0.1 : 17777") : ServerIP);
+		PC->ConnectToServer(Nickname, ServerIP);
 }

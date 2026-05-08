@@ -5,8 +5,6 @@
 #include "Save/BAServerSaveGame.h"
 #include "Character/CharacterStructData.h"
 #include "Kismet/GameplayStatics.h"
-#include "GameFramework/GameStateBase.h"
-#include "GameFramework/PlayerState.h"
 
 static const FString ResServerSlot    = TEXT("BA_ResourceSlot_Server");
 static const FString CharServerSlot   = TEXT("BA_CharacterSlot_Server");
@@ -44,32 +42,15 @@ void ABAGameModeBase::BeginPlay()
 #endif
 }
 
-void ABAGameModeBase::PreLogin(const FString& Options, const FString& Address, const FUniqueNetIdRepl& UniqueId, FString& ErrorMessage)
-{
-	Super::PreLogin(Options, Address, UniqueId, ErrorMessage);
-	if (!ErrorMessage.IsEmpty()) return;
-
-#if !WITH_EDITOR
-	const FString Name = UGameplayStatics::ParseOption(Options, TEXT("Name"));
-	if (Name.IsEmpty())
-		ErrorMessage = TEXT("닉네임을 입력해주세요.");
-	else if (Name.Len() > 20)
-		ErrorMessage = TEXT("닉네임은 20자 이하여야 합니다.");
-#endif
-}
-
 void ABAGameModeBase::PostLogin(APlayerController* NewPlayer)
 {
 	Super::PostLogin(NewPlayer);
+}
 
-	ABAPlayerController* PC = Cast<ABAPlayerController>(NewPlayer);
-	if (!PC || !NewPlayer->PlayerState) return;
+void ABAGameModeBase::RegisterNicknameForPlayer(ABAPlayerController* PC, const FString& Nickname)
+{
+	if (!PC || Nickname.IsEmpty()) return;
 
-	FString Nickname = NewPlayer->PlayerState->GetPlayerName();
-	if (Nickname.IsEmpty())
-		Nickname = FString::Printf(TEXT("Player_%d"), NewPlayer->PlayerState->GetPlayerId());
-
-	// 닉네임으로 UID 조회, 없으면 신규 생성
 	FString& UID = ResourceServerSave->NicknameToUID.FindOrAdd(Nickname);
 	if (UID.IsEmpty())
 	{
@@ -77,6 +58,7 @@ void ABAGameModeBase::PostLogin(APlayerController* NewPlayer)
 		SaveServerData();
 	}
 
+	UE_LOG(LogTemp, Log, TEXT("[GameMode] RegisterNicknameForPlayer - Nickname: %s, UID: %s"), *Nickname, *UID);
 	RegisterPlayerUID(PC, UID, Nickname);
 }
 

@@ -9,20 +9,15 @@ USaveGame* UBAPartySubsystem::GetSaveData() const
 	return SaveData;
 }
 
-FString UBAPartySubsystem::ResolveSlotName() const
+void UBAPartySubsystem::LoadForNickname(const FString& Nickname)
 {
-	// UserIndex는 Initialize()에서 Context.OwningGameInstance == GetGameInstance() 방식으로
-	// 설정된다. 월드 매칭 방식보다 초기화 타이밍에 무관하게 안정적이다.
-	return UserIndex == 0
-		? TEXT("BA_PartySlot")
-		: FString::Printf(TEXT("BA_PartySlot_PIE%d"), UserIndex);
-}
+	if (Nickname.IsEmpty()) return;
 
-void UBAPartySubsystem::EnsureLoaded()
-{
-	if (SaveData) return;
+	const FString NewSlot = TEXT("BA_PartySlot_") + Nickname;
+	if (CachedSlotName == NewSlot && SaveData) return;
 
-	CachedSlotName = ResolveSlotName();
+	SaveData = nullptr;
+	CachedSlotName = NewSlot;
 
 	if (UGameplayStatics::DoesSaveGameExist(CachedSlotName, 0))
 		SaveData = Cast<UBAPartySaveGame>(UGameplayStatics::LoadGameFromSlot(CachedSlotName, 0));
@@ -37,18 +32,14 @@ void UBAPartySubsystem::EnsureLoaded()
 		while (SaveData->PartyPresets.Num() < MaxPartyPresets)
 			SaveData->PartyPresets.Add(FPartyPreset());
 	}
-
-	if (SaveData->PlayerUID.IsEmpty())
-	{
-		SaveData->PlayerUID = FGuid::NewGuid().ToString(EGuidFormats::DigitsWithHyphens);
-		SaveNow();
-	}
 }
 
-FString UBAPartySubsystem::GetPlayerUID()
+void UBAPartySubsystem::EnsureLoaded()
 {
-	EnsureLoaded();
-	return SaveData ? SaveData->PlayerUID : TEXT("");
+	if (SaveData) return;
+	// LoadForNickname 호출 전 접근 시 빈 데이터로 fallback
+	SaveData = Cast<UBAPartySaveGame>(UGameplayStatics::CreateSaveGameObject(UBAPartySaveGame::StaticClass()));
+	SaveData->PartyPresets.SetNum(MaxPartyPresets);
 }
 
 TArray<FName> UBAPartySubsystem::GetPartyPreset(int32 PresetIndex)

@@ -6,6 +6,7 @@
 #include "SubSystem/BACharacterDataSubsystem.h"
 #include "SubSystem/BAResourceSubsystem.h"
 #include "SubSystem/BAMailSubsystem.h"
+#include "SubSystem/BAPartySubsystem.h"
 #include "Game/BAGameModeBase.h"
 #include "Game/BAGameInstance.h"
 #include "Manager/BAUIManager.h"
@@ -49,12 +50,29 @@ void ABAPlayerController::BeginPlay()
 		{
 			BAUIManager->OnScreenChanged.AddUObject(this, &ABAPlayerController::OnUIScreenChanged);
 
-			// Connect 버튼으로 접속 중인 경우에만 LOGIN 스킵 — ClientInitPlayerData가 MAIN으로 전환
 			UBAGameInstance* GI = Cast<UBAGameInstance>(GetGameInstance());
 			const bool bSkip = GI && GI->bIsConnectingToServer;
 			UE_LOG(LogTemp, Warning, TEXT("[PC] BeginPlay - bIsConnectingToServer=%d, bSkip=%d"), GI ? (int)GI->bIsConnectingToServer : -1, (int)bSkip);
-			if (!bSkip)
+
+			if (bSkip)
+			{
+				// 로그인 위젯에서 Connect를 눌러 접속한 경우
+				// 서버 연결이 완전히 준비된 다음 틱에 닉네임 RPC 전송
+				if (GI && !GI->PendingNickname.IsEmpty())
+				{
+					const FString NicknameCopy = GI->PendingNickname;
+					GI->PendingNickname.Empty();
+					GetWorldTimerManager().SetTimerForNextTick([this, NicknameCopy]()
+					{
+						UE_LOG(LogTemp, Warning, TEXT("[PC] ServerRegisterNickname 전송 - %s"), *NicknameCopy);
+						ServerRegisterNickname(NicknameCopy);
+					});
+				}
+			}
+			else
+			{
 				BAUIManager->ShowScreen(EUIScreen::LOGIN);
+			}
 		}
 
 		// UID 등록은 서버 PostLogin에서 닉네임 기반으로 처리
@@ -92,11 +110,25 @@ void ABAPlayerController::BeginPlay()
 void ABAPlayerController::ConnectToServer(const FString& Nickname, const FString& ServerIP)
 {
 	if (UBAGameInstance* GI = Cast<UBAGameInstance>(GetGameInstance()))
+	{
 		GI->bIsConnectingToServer = true;
+		GI->PendingNickname = Nickname;
+	}
+	UE_LOG(LogTemp, Warning, TEXT("[Login] ClientTravel → %s (Nickname: %s)"), *ServerIP, *Nickname);
+	ClientTravel(ServerIP, TRAVEL_Absolute);
+}
 
-	const FString URL = ServerIP + TEXT("?Name=") + Nickname;
-	UE_LOG(LogTemp, Warning, TEXT("[Login] ClientTravel → %s"), *URL);
-	ClientTravel(URL, TRAVEL_Absolute);
+bool ABAPlayerController::ServerRegisterNickname_Validate(const FString& Nickname)
+{
+	return !Nickname.IsEmpty() && Nickname.Len() <= 20;
+}
+
+void ABAPlayerController::ServerRegisterNickname_Implementation(const FString& Nickname)
+{
+	if (ABAGameModeBase* GM = GetWorld()->GetAuthGameMode<ABAGameModeBase>())
+	{
+		GM->RegisterNicknameForPlayer(this, Nickname);
+	}
 }
 
 ABAPreviewCharacter* ABAPlayerController::EnsurePreviewActor(int32 index)
@@ -206,11 +238,19 @@ void ABAPlayerController::ClientApplyMailReward_Implementation(FGuid MailId, con
 
 void ABAPlayerController::ClientInitPlayerData_Implementation(const TArray<FBAResourceEntry>& Resources, const FString& UserName, int32 UserLevel, const TArray<FOwnedCharacter>& Characters)
 {
+	UBAGameInstance* GI = Cast<UBAGameInstance>(GetGameInstance());
+	UE_LOG(LogTemp, Warning, TEXT("[PC] ClientInitPlayerData - UserName=%s, bIsConnecting=%d"), *UserName, GI ? (int)GI->bIsConnectingToServer : -1);
+	if (!GI || !GI->bIsConnectingToServer)
+		return;
+
 	if (UBAResourceSubsystem* ResSub = GetGameInstance()->GetSubsystem<UBAResourceSubsystem>())
 		ResSub->InitializeFromServer(Resources, UserName, UserLevel);
 
 	if (UBACharacterDataSubsystem* CharSub = GetGameInstance()->GetSubsystem<UBACharacterDataSubsystem>())
 		CharSub->InitializeFromServer(Characters);
+
+	if (UBAPartySubsystem* PartySub = GetGameInstance()->GetSubsystem<UBAPartySubsystem>())
+		PartySub->LoadForNickname(UserName);
 
 	// 서버 데이터 수신 완료 → 메인 화면 전환
 	if (BAUIManager)

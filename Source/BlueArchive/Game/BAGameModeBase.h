@@ -22,10 +22,10 @@ public:
 
 	virtual void InitGame(const FString& MapName, const FString& Options, FString& ErrorMessage) override;
 	virtual void BeginPlay() override;
-	virtual void PreLogin(const FString& Options, const FString& Address, const FUniqueNetIdRepl& UniqueId, FString& ErrorMessage) override;
 	virtual void PostLogin(APlayerController* NewPlayer) override;
 	virtual void Logout(AController* Exiting) override;
 
+	void RegisterNicknameForPlayer(ABAPlayerController* PC, const FString& Nickname);
 	void RegisterPlayerUID(ABAPlayerController* PC, const FString& UID, const FString& Nickname);
 	ABAPlayerController* FindControllerByUID(const FString& UID) const;
 
@@ -75,4 +75,5 @@ private:
 	void BroadcastMailToAll(const FBAMailItem& MailItem);
 	void SendMailToPlayer(ABAPlayerController* PC, const FBAMailItem& MailItem);
 	FString FindUIDByController(ABAPlayerController* PC) const;
+
 };

@@ -34,6 +34,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Login")
 	void ConnectToServer(const FString& Nickname, const FString& ServerIP);
 
+	/** 두 번째 BeginPlay에서 자동 호출: 닉네임을 서버에 RPC로 전달 */
+	UFUNCTION(Server, Reliable, WithValidation)
+	void ServerRegisterNickname(const FString& Nickname);
+
 	// ───── 메일 RPC ─────
 
 	/** 서버 → 클라이언트: 메일 수신 (GameMode에서 호출) */
