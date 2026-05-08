@@ -1,13 +1,11 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "UI/BACharacterPortraitWidget.h"
-#include "SubSystem/BACharacterDataSubsystem.h"
-#include "Character/CharacterStructData.h"
+#include "UI/ViewModel/BACharacterPortraitViewModel.h"
 #include "Components/Image.h"
 #include "Components/Button.h"
 #include "Components/TextBlock.h"
 #include "Input/Reply.h"
-#include "Blueprint/WidgetLayoutLibrary.h"
 
 void UBACharacterPortraitWidget::NativeConstruct()
 {
@@ -18,12 +16,20 @@ void UBACharacterPortraitWidget::NativeConstruct()
 		Button_Portrait->OnClicked.AddDynamic(this, &UBACharacterPortraitWidget::HandleClicked);
 	}
 
+	PortraitViewModel = NewObject<UBACharacterPortraitViewModel>(this);
+	PortraitViewModel->Init(GetGameInstance());
+	PortraitViewModel->SetCharacterId(CharacterId);
+
 	RefreshAppearance();
 }
 
 void UBACharacterPortraitWidget::SetCharacterId(FName NewId)
 {
 	CharacterId = NewId;
+	if (PortraitViewModel)
+	{
+		PortraitViewModel->SetCharacterId(NewId);
+	}
 	RefreshAppearance();
 }
 
@@ -37,34 +43,21 @@ void UBACharacterPortraitWidget::SetDisplayName(FText InName)
 
 void UBACharacterPortraitWidget::RefreshAppearance()
 {
-	UBACharacterDataSubsystem* Sub = GetSubsystem<UBACharacterDataSubsystem>();
-	if (!Sub) return;
-
-	const FName IdToShow = (CharacterId == NAME_None) ? FName(TEXT("CHR_000")) : CharacterId;
+	if (!PortraitViewModel) return;
 
 	if (Img_Portrait)
 	{
-		FCharacterRow Row;
-		if (Sub->GetCharacterDefinition(IdToShow, Row))
+		UTexture2D* Tex = PortraitViewModel->GetPortraitTexture();
+		if (Tex)
 		{
-			UTexture2D* Tex = Row.Portrait.LoadSynchronous();
-			if (Tex)
-			{
-				Img_Portrait->SetBrushFromTexture(Tex);
-			}
+			Img_Portrait->SetBrushFromTexture(Tex);
 		}
 	}
 
+	// WBP에서 DisplayName FieldNotify 바인딩을 설정하지 않은 경우 C++ fallback
 	if (Text_Name)
 	{
-		if (CharacterId == NAME_None)
-		{
-			Text_Name->SetText(FText::GetEmpty());
-		}
-		else
-		{
-			Text_Name->SetText(Sub->GetCharacterName(CharacterId));
-		}
+		Text_Name->SetText(PortraitViewModel->GetDisplayName());
 	}
 }
 
