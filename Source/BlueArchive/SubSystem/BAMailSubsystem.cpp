@@ -3,10 +3,18 @@
 #include "SubSystem/BAMailSubsystem.h"
 #include "SubSystem/BAResourceSubsystem.h"
 #include "Player/BAPlayerController.h"
+#include "UI/ViewModel/BAMailViewModel.h"
 
 bool UBAMailSubsystem::ShouldCreateSubsystem(UObject* Outer) const
 {
 	return Super::ShouldCreateSubsystem(Outer) && !IsRunningDedicatedServer();
+}
+
+void UBAMailSubsystem::Initialize(FSubsystemCollectionBase& Collection)
+{
+	Super::Initialize(Collection);
+	MailViewModel = NewObject<UBAMailViewModel>(this);
+	MailViewModel->Init(this);
 }
 
 // ───── 내부 헬퍼 ─────
@@ -34,6 +42,11 @@ void UBAMailSubsystem::OnMailReceived(const FBAMailItem& MailItem)
 		*MailItem.MailId.ToString(), *MailItem.Title);
 
 	OnNewMailReceived.Broadcast(MailItem);
+
+	if (MailViewModel)
+	{
+		MailViewModel->NotifyMailReceived(MailItem);
+	}
 }
 
 void UBAMailSubsystem::ApplyRewardsLocally(FGuid MailId, const TArray<FBAMailReward>& Rewards)
@@ -55,6 +68,11 @@ void UBAMailSubsystem::ApplyRewardsLocally(FGuid MailId, const TArray<FBAMailRew
 	}
 
 	OnMailClaimed.Broadcast(MailId);
+
+	if (MailViewModel)
+	{
+		MailViewModel->NotifyMailClaimed(MailId, Rewards);
+	}
 }
 
 // ───── UI에서 호출 ─────

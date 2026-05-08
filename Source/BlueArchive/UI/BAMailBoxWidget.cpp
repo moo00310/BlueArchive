@@ -2,6 +2,8 @@
 
 #include "UI/BAMailBoxWidget.h"
 #include "UI/BAMailItemWidget.h"
+#include "UI/BARewardPopupWidget.h"
+#include "UI/ViewModel/BAMailViewModel.h"
 #include "SubSystem/BAMailSubsystem.h"
 #include "Components/ScrollBox.h"
 #include "Components/Button.h"
@@ -18,8 +20,13 @@ void UBAMailBoxWidget::NativeConstruct()
 
 	if (UBAMailSubsystem* MailSub = GetSubsystem<UBAMailSubsystem>())
 	{
-		MailSub->OnNewMailReceived.AddDynamic(this, &UBAMailBoxWidget::OnNewMailReceivedHandler);
-		MailSub->OnMailClaimed.AddDynamic(this, &UBAMailBoxWidget::OnMailClaimedHandler);
+		MailViewModel = MailSub->GetMailViewModel();
+	}
+
+	if (MailViewModel)
+	{
+		MailViewModel->OnMailListChanged.AddDynamic(this, &UBAMailBoxWidget::OnMailListChangedHandler);
+		MailViewModel->OnMailClaimed.AddDynamic(this, &UBAMailBoxWidget::OnMailClaimedHandler);
 	}
 
 	RefreshMailList();
@@ -27,10 +34,10 @@ void UBAMailBoxWidget::NativeConstruct()
 
 void UBAMailBoxWidget::NativeDestruct()
 {
-	if (UBAMailSubsystem* MailSub = GetSubsystem<UBAMailSubsystem>())
+	if (MailViewModel)
 	{
-		MailSub->OnNewMailReceived.RemoveDynamic(this, &UBAMailBoxWidget::OnNewMailReceivedHandler);
-		MailSub->OnMailClaimed.RemoveDynamic(this, &UBAMailBoxWidget::OnMailClaimedHandler);
+		MailViewModel->OnMailListChanged.RemoveDynamic(this, &UBAMailBoxWidget::OnMailListChangedHandler);
+		MailViewModel->OnMailClaimed.RemoveDynamic(this, &UBAMailBoxWidget::OnMailClaimedHandler);
 	}
 
 	Super::NativeDestruct();
@@ -43,10 +50,9 @@ void UBAMailBoxWidget::RefreshMailList()
 		ScrollBox_Mails->ClearChildren();
 	}
 
-	UBAMailSubsystem* MailSub = GetSubsystem<UBAMailSubsystem>();
-	if (!MailSub) return;
+	if (!MailViewModel) return;
 
-	for (const FBAMailItem& Mail : MailSub->GetMailBox())
+	for (const FBAMailItem& Mail : MailViewModel->GetMailList())
 	{
 		AddMailItemWidget(Mail);
 	}
@@ -61,43 +67,37 @@ void UBAMailBoxWidget::AddMailItemWidget(const FBAMailItem& MailItem)
 	UBAMailItemWidget* ItemWidget = CreateWidget<UBAMailItemWidget>(this, MailItemWidgetClass);
 	if (!ItemWidget) return;
 
-	ItemWidget->InitFromMailItem(MailItem);
+	ItemWidget->InitFromMailItem(MailItem, MailViewModel);
 	ScrollBox_Mails->AddChild(ItemWidget);
 }
 
-void UBAMailBoxWidget::OnNewMailReceivedHandler(const FBAMailItem& MailItem)
+void UBAMailBoxWidget::OnMailListChangedHandler()
 {
-	AddMailItemWidget(MailItem);
+	RefreshMailList();
+}
+
+void UBAMailBoxWidget::OnMailClaimedHandler(FGuid MailId, TArray<FBAMailReward> Rewards)
+{
 	UpdateUnreadBadge();
+
+	if (RewardPopup)
+	{
+		RewardPopup->ShowRewards(Rewards);
+	}
 }
 
 void UBAMailBoxWidget::OnClaimAllButtonClicked()
 {
-	UBAMailSubsystem* MailSub = GetSubsystem<UBAMailSubsystem>();
-	if (!MailSub) return;
-
-	for (const FBAMailItem& Mail : MailSub->GetMailBox())
+	if (MailViewModel)
 	{
-		if (!Mail.bClaimed)
-		{
-			MailSub->ClaimReward(Mail.MailId);
-		}
+		MailViewModel->ClaimAllRewards();
 	}
-}
-
-void UBAMailBoxWidget::OnMailClaimedHandler(FGuid MailId)
-{
-	UpdateUnreadBadge();
 }
 
 void UBAMailBoxWidget::UpdateUnreadBadge()
 {
-	if (!Text_UnreadCount) return;
+	if (!Text_UnreadCount || !MailViewModel) return;
 
-	UBAMailSubsystem* MailSub = GetSubsystem<UBAMailSubsystem>();
-	if (!MailSub) return;
-
-	const int32 Count = MailSub->GetUnclaimedCount();
-	const FString BadgeText = FString::Printf(TEXT("미수령 %d"), Count);
+	const FString BadgeText = FString::Printf(TEXT("미수령 %d"), MailViewModel->GetUnclaimedCount());
 	Text_UnreadCount->SetText(FText::FromString(BadgeText));
 }

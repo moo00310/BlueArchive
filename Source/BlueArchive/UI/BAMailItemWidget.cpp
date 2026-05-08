@@ -1,7 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "UI/BAMailItemWidget.h"
-#include "SubSystem/BAMailSubsystem.h"
+#include "UI/ViewModel/BAMailViewModel.h"
 #include "Components/TextBlock.h"
 #include "Components/Button.h"
 #include "Components/Widget.h"
@@ -14,26 +14,28 @@ void UBAMailItemWidget::NativeConstruct()
 	{
 		Button_Claim->OnClicked.AddDynamic(this, &UBAMailItemWidget::OnClaimButtonClicked);
 	}
-
-	if (UBAMailSubsystem* MailSub = GetSubsystem<UBAMailSubsystem>())
-	{
-		MailSub->OnMailClaimed.AddDynamic(this, &UBAMailItemWidget::OnMailClaimedHandler);
-	}
 }
 
 void UBAMailItemWidget::NativeDestruct()
 {
-	if (UBAMailSubsystem* MailSub = GetSubsystem<UBAMailSubsystem>())
+	if (MailViewModel)
 	{
-		MailSub->OnMailClaimed.RemoveDynamic(this, &UBAMailItemWidget::OnMailClaimedHandler);
+		MailViewModel->OnMailClaimed.RemoveDynamic(this, &UBAMailItemWidget::OnMailClaimedHandler);
 	}
 
 	Super::NativeDestruct();
 }
 
-void UBAMailItemWidget::InitFromMailItem(const FBAMailItem& MailItem)
+void UBAMailItemWidget::InitFromMailItem(const FBAMailItem& MailItem, UBAMailViewModel* ViewModel)
 {
+	// 이전 ViewModel 바인딩 해제
+	if (MailViewModel)
+	{
+		MailViewModel->OnMailClaimed.RemoveDynamic(this, &UBAMailItemWidget::OnMailClaimedHandler);
+	}
+
 	MailId = MailItem.MailId;
+	MailViewModel = ViewModel;
 
 	if (Text_Title)
 	{
@@ -52,17 +54,22 @@ void UBAMailItemWidget::InitFromMailItem(const FBAMailItem& MailItem)
 	}
 
 	RefreshClaimState(MailItem.bClaimed);
+
+	if (MailViewModel)
+	{
+		MailViewModel->OnMailClaimed.AddDynamic(this, &UBAMailItemWidget::OnMailClaimedHandler);
+	}
 }
 
 void UBAMailItemWidget::OnClaimButtonClicked()
 {
-	if (UBAMailSubsystem* MailSub = GetSubsystem<UBAMailSubsystem>())
+	if (MailViewModel)
 	{
-		MailSub->ClaimReward(MailId);
+		MailViewModel->ClaimReward(MailId);
 	}
 }
 
-void UBAMailItemWidget::OnMailClaimedHandler(FGuid ClaimedMailId)
+void UBAMailItemWidget::OnMailClaimedHandler(FGuid ClaimedMailId, TArray<FBAMailReward> Rewards)
 {
 	if (ClaimedMailId == MailId)
 	{

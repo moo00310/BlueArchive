@@ -7,6 +7,7 @@
 #include "Struct/BAMailTypes.h"
 
 class ABAPlayerController;
+class UBAMailViewModel;
 
 #include "BAMailSubsystem.generated.h"
 
@@ -28,6 +29,11 @@ class BLUEARCHIVE_API UBAMailSubsystem : public UGameInstanceSubsystem
 
 public:
 	virtual bool ShouldCreateSubsystem(UObject* Outer) const override;
+	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
+
+	/** MVVM ViewModel 접근자 (Widget에서 ViewModel 획득 시 사용) */
+	UFUNCTION(BlueprintCallable, Category = "Mail")
+	UBAMailViewModel* GetMailViewModel() const { return MailViewModel; }
 
 	// ───── PlayerController RPC에서 호출 ─────
 
@@ -72,4 +78,8 @@ private:
 
 	/** 로컬 PlayerController 약참조 (ClaimReward에서 RPC 호출용) */
 	TWeakObjectPtr<ABAPlayerController> LocalPC;
+
+	/** MVVM ViewModel (GameInstance 생존 기간 동안 유지) */
+	UPROPERTY()
+	TObjectPtr<UBAMailViewModel> MailViewModel;
 };
