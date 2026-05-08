@@ -37,15 +37,16 @@ void UBAMailSubsystem::OnMailReceived(const FBAMailItem& MailItem)
 	if (FindMailById(MailItem.MailId)) return;
 
 	MailBox.Add(MailItem);
+	FBAMailItem& Added = MailBox.Last();
 
 	UE_LOG(LogTemp, Log, TEXT("[MailSubsystem] Mail received - Id: %s, Title: %s"),
-		*MailItem.MailId.ToString(), *MailItem.Title);
+		*Added.MailId.ToString(), *Added.Title);
 
-	OnNewMailReceived.Broadcast(MailItem);
+	OnNewMailReceived.Broadcast(Added);
 
 	if (MailViewModel)
 	{
-		MailViewModel->NotifyMailReceived(MailItem);
+		MailViewModel->NotifyMailReceived(Added);
 	}
 }
 
@@ -55,6 +56,7 @@ void UBAMailSubsystem::ApplyRewardsLocally(FGuid MailId, const TArray<FBAMailRew
 	if (!Found || Found->bClaimed) return;
 
 	Found->bClaimed = true;
+	Found->ClaimedAt = FDateTime::UtcNow();
 
 	if (UBAResourceSubsystem* ResSub = GetGameInstance()->GetSubsystem<UBAResourceSubsystem>())
 	{

@@ -87,23 +87,6 @@ void ABAPlayerController::BeginPlay()
 		PreviewActors.SetNum(2);
 		PreviewLoadHandles.SetNum(2);
 		PreviewRequestSerials.SetNum(2);
-
-#if WITH_EDITOR
-		// 테스트용: 3초 뒤 수신함 첫 번째 메일 보상 자동 수령
-		FTimerHandle TestClaimTimer;
-		GetWorldTimerManager().SetTimer(TestClaimTimer, [this]()
-		{
-			if (UBAMailSubsystem* MailSub = GetGameInstance()->GetSubsystem<UBAMailSubsystem>())
-			{
-				const TArray<FBAMailItem>& Box = MailSub->GetMailBox();
-				if (Box.Num() > 0)
-				{
-					UE_LOG(LogTemp, Log, TEXT("[Test] ClaimReward 호출 - MailId: %s"), *Box[0].MailId.ToString());
-					MailSub->ClaimReward(Box[0].MailId);
-				}
-			}
-		}, 3.0f, false);
-#endif
 	}
 }
 

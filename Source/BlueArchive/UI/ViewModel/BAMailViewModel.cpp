@@ -46,6 +46,7 @@ void UBAMailViewModel::NotifyMailClaimed(FGuid MailId, const TArray<FBAMailRewar
 	if (FBAMailItem* Found = MailList.FindByPredicate([&](const FBAMailItem& M) { return M.MailId == MailId; }))
 	{
 		Found->bClaimed = true;
+		Found->ClaimedAt = FDateTime::UtcNow();
 	}
 	RecalcUnclaimedCount();
 	OnMailClaimed.Broadcast(MailId, Rewards);
@@ -61,4 +62,5 @@ void UBAMailViewModel::RecalcUnclaimedCount()
 		if (!Mail.bClaimed) ++Count;
 	}
 	UE_MVVM_SET_PROPERTY_VALUE(UnclaimedCount, Count);
+	UE_MVVM_SET_PROPERTY_VALUE(bHasUnclaimedMail, Count > 0);
 }

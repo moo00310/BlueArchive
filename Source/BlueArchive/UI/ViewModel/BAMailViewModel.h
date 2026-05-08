@@ -45,6 +45,9 @@ public:
 	int32 GetUnclaimedCount() const { return UnclaimedCount; }
 
 	UFUNCTION(BlueprintPure, Category = "Mail|ViewModel")
+	bool GetHasUnclaimedMail() const { return bHasUnclaimedMail; }
+
+	UFUNCTION(BlueprintPure, Category = "Mail|ViewModel")
 	const TArray<FBAMailItem>& GetMailList() const { return MailList; }
 
 	// ─── ViewModel → View Events ───
@@ -63,9 +66,11 @@ public:
 private:
 	void RecalcUnclaimedCount();
 
-	/** 에디터 바인딩 대상 프로퍼티 */
 	UPROPERTY(FieldNotify, BlueprintReadOnly, meta = (AllowPrivateAccess))
 	int32 UnclaimedCount = 0;
+
+	UPROPERTY(FieldNotify, BlueprintReadOnly, meta = (AllowPrivateAccess))
+	bool bHasUnclaimedMail = false;
 
 	UPROPERTY()
 	TArray<FBAMailItem> MailList;

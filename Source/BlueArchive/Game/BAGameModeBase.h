@@ -51,6 +51,7 @@ protected:
 	TArray<FBAMailItem> ActiveMailList;
 
 	TMap<FGuid, TSet<FString>> ClaimedMap;
+	TMap<FGuid, TMap<FString, int64>> ClaimedTimeMap;  // MailId → UID → FDateTime ticks
 	TMap<TObjectPtr<ABAPlayerController>, TArray<FGuid>> PendingClaims;
 
 	/** 전체 플레이어 재화 데이터 (BA_ResourceSlot_Server.sav) */

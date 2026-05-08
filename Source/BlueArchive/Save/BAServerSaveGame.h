@@ -6,6 +6,7 @@
 #include "GameFramework/SaveGame.h"
 #include "SubSystem/BAResourceTypes.h"
 #include "Character/CharacterStructData.h"
+#include "Struct/BAMailTypes.h"
 #include "BAServerSaveGame.generated.h"
 
 /** 플레이어 1명의 재화/유저 정보 */
@@ -68,6 +69,10 @@ struct FBAClaimedRecord
 
 	UPROPERTY(SaveGame)
 	TArray<FString> ClaimedUIDs;
+
+	/** UID → 수령 시각 (FDateTime ticks) */
+	UPROPERTY(SaveGame)
+	TMap<FString, int64> UIDToClaimedAt;
 };
 
 /** 서버가 관리하는 메일 수령 이력 (BA_MailSlot_Server.sav) */
@@ -76,6 +81,10 @@ class BLUEARCHIVE_API UBAMailServerSaveGame : public USaveGame
 {
 	GENERATED_BODY()
 public:
+	/** 활성 메일 목록 (MailId 유지를 위해 서버 재시작 간 저장) */
+	UPROPERTY(SaveGame)
+	TArray<FBAMailItem> ActiveMailList;
+
 	/** MailId 문자열 → 수령한 UID 목록 */
 	UPROPERTY(SaveGame)
 	TMap<FString, FBAClaimedRecord> ClaimedData;

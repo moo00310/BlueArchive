@@ -28,17 +28,20 @@ void ABAGameModeBase::BeginPlay()
 	Super::BeginPlay();
 
 #if WITH_EDITOR
-	FBAMailItem TestMail;
-	TestMail.Title     = TEXT("테스트 메일");
-	TestMail.Body      = TEXT("점검 보상입니다.");
-	TestMail.ExpiresAt = FDateTime::UtcNow() + FTimespan::FromDays(30.0);
+	if (ActiveMailList.IsEmpty())
+	{
+		FBAMailItem TestMail;
+		TestMail.Title     = TEXT("테스트 메일");
+		TestMail.Body      = TEXT("점검 보상입니다.");
+		TestMail.ExpiresAt = FDateTime::UtcNow() + FTimespan::FromDays(30.0);
 
-	FBAMailReward Reward;
-	Reward.ResourceType = EResourceType::Credit;
-	Reward.Amount       = 1000;
-	TestMail.Rewards.Add(Reward);
+		FBAMailReward Reward;
+		Reward.ResourceType = EResourceType::Credit;
+		Reward.Amount       = 1000;
+		TestMail.Rewards.Add(Reward);
 
-	RegisterMail(TestMail);
+		RegisterMail(TestMail);
+	}
 #endif
 }
 
@@ -95,8 +98,11 @@ void ABAGameModeBase::LoadServerSaves()
 	if (!MailServerSave)
 		MailServerSave = Cast<UBAMailServerSaveGame>(UGameplayStatics::CreateSaveGameObject(UBAMailServerSaveGame::StaticClass()));
 
-	// 디스크 데이터 → ClaimedMap 복원
+	// 디스크 데이터 → ActiveMailList + ClaimedMap + ClaimedTimeMap 복원
+	ActiveMailList = MailServerSave->ActiveMailList;
+
 	ClaimedMap.Reset();
+	ClaimedTimeMap.Reset();
 	for (const auto& Pair : MailServerSave->ClaimedData)
 	{
 		FGuid MailId;
@@ -104,6 +110,8 @@ void ABAGameModeBase::LoadServerSaves()
 
 		TSet<FString>& NewSet = ClaimedMap.Add(MailId);
 		NewSet.Append(Pair.Value.ClaimedUIDs);
+
+		ClaimedTimeMap.Add(MailId, Pair.Value.UIDToClaimedAt);
 	}
 }
 
@@ -116,12 +124,17 @@ void ABAGameModeBase::SaveServerData()
 
 	if (MailServerSave)
 	{
-		// ClaimedMap → 디스크 데이터 직렬화
+		MailServerSave->ActiveMailList = ActiveMailList;
+
 		MailServerSave->ClaimedData.Reset();
 		for (const auto& Pair : ClaimedMap)
 		{
 			FBAClaimedRecord Record;
 			Record.ClaimedUIDs = Pair.Value.Array();
+			if (const TMap<FString, int64>* Times = ClaimedTimeMap.Find(Pair.Key))
+			{
+				Record.UIDToClaimedAt = *Times;
+			}
 			MailServerSave->ClaimedData.Add(Pair.Key.ToString(), Record);
 		}
 		UGameplayStatics::SaveGameToSlot(MailServerSave, MailServerSlot, 0);
@@ -193,14 +206,25 @@ void ABAGameModeBase::RegisterPlayerUID(ABAPlayerController* PC, const FString& 
 
 	PC->ClientInitPlayerData(ResourceEntries, ResRecord.UserName, ResRecord.UserLevel, CharRecord.Characters);
 
-	// 미수신·미만료 메일 일괄 전송
+	// 미만료 메일 전체 전송 (수령 여부를 bClaimed에 반영)
 	const FDateTime Now = FDateTime::UtcNow();
 	for (const FBAMailItem& Mail : ActiveMailList)
 	{
 		if (Mail.ExpiresAt <= Now) continue;
 		const TSet<FString>* Claimers = ClaimedMap.Find(Mail.MailId);
-		if (Claimers && Claimers->Contains(UID)) continue;
-		SendMailToPlayer(PC, Mail);
+		FBAMailItem MailToSend = Mail;
+		MailToSend.bClaimed = (Claimers && Claimers->Contains(UID));
+		if (MailToSend.bClaimed)
+		{
+			if (const TMap<FString, int64>* Times = ClaimedTimeMap.Find(Mail.MailId))
+			{
+				if (const int64* Ticks = Times->Find(UID))
+				{
+					MailToSend.ClaimedAt = FDateTime(*Ticks);
+				}
+			}
+		}
+		SendMailToPlayer(PC, MailToSend);
 	}
 
 	if (TArray<FGuid>* Pending = PendingClaims.Find(PC))
@@ -224,6 +248,8 @@ void ABAGameModeBase::RegisterMail(FBAMailItem MailItem)
 {
 	if (!MailItem.MailId.IsValid())
 		MailItem.MailId = FGuid::NewGuid();
+
+	MailItem.ReceivedAt = FDateTime::UtcNow();
 
 	ActiveMailList.Add(MailItem);
 	BroadcastMailToAll(MailItem);
@@ -265,6 +291,7 @@ void ABAGameModeBase::ProcessRewardClaim(ABAPlayerController* PC, FGuid MailId)
 	TSet<FString>& Claimers = ClaimedMap.FindOrAdd(MailId);
 	if (Claimers.Contains(PlayerUID)) return;
 	Claimers.Add(PlayerUID);
+	ClaimedTimeMap.FindOrAdd(MailId).Add(PlayerUID, FDateTime::UtcNow().GetTicks());
 
 	// 서버 재화 업데이트 후 저장
 	FBAPlayerResourceRecord& ResRecord = GetOrCreateResourceRecord(PlayerUID);

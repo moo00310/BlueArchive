@@ -52,8 +52,21 @@ private:
 	UPROPERTY(meta = (BindWidgetOptional))
 	TObjectPtr<UTextBlock> Text_Body;
 
+	/** "받은 날짜" / "수령 날짜" 레이블 텍스트 */
 	UPROPERTY(meta = (BindWidgetOptional))
-	TObjectPtr<UTextBlock> Text_Expires;
+	TObjectPtr<UTextBlock> Text_ReceivedLabel;
+
+	/** 받은 날짜(미수령) 또는 수령 날짜(수령) 값 */
+	UPROPERTY(meta = (BindWidgetOptional))
+	TObjectPtr<UTextBlock> Text_ReceivedDate;
+
+	/** 수령 기한 남은 일수 */
+	UPROPERTY(meta = (BindWidgetOptional))
+	TObjectPtr<UTextBlock> Text_ExpiresDay;
+
+	/** "수령 기한" 행 전체 — 수령 시 Collapsed */
+	UPROPERTY(meta = (BindWidgetOptional))
+	TObjectPtr<UWidget> Panel_ExpiresRow;
 
 	UPROPERTY(meta = (BindWidgetOptional))
 	TObjectPtr<UButton> Button_Claim;
@@ -64,6 +77,9 @@ private:
 	// ───── 내부 상태 ─────
 
 	FGuid MailId;
+	FDateTime ReceivedAt;
+	FDateTime ExpiresAt;
+	FDateTime ClaimedAt;
 
 	UPROPERTY()
 	TObjectPtr<UBAMailViewModel> MailViewModel;

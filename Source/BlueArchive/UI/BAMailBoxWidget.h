@@ -13,6 +13,7 @@ class UTextBlock;
 class UBAMailItemWidget;
 class UBAMailViewModel;
 class UBARewardPopupWidget;
+class UBAUserWidgetRadio;
 
 /**
  * 메일 수신함 전체 위젯
@@ -43,13 +44,20 @@ private:
 	UFUNCTION()
 	void OnClaimAllButtonClicked();
 
+	UFUNCTION()
+	void OnMailTabChanged(int32 NewIndex);
+
 	void UpdateUnreadBadge();
-	void AddMailItemWidget(const FBAMailItem& MailItem);
+	void ApplyTabVisibility(int32 TabIndex);
+	void AddMailItemWidget(const FBAMailItem& MailItem, UScrollBox* TargetScrollBox);
 
 	// ───── UMG 바인딩 ─────
 
 	UPROPERTY(meta = (BindWidgetOptional))
-	TObjectPtr<UScrollBox> ScrollBox_Mails;
+	TObjectPtr<UScrollBox> ScrollBox_Unclaimed;
+
+	UPROPERTY(meta = (BindWidgetOptional))
+	TObjectPtr<UScrollBox> ScrollBox_Claimed;
 
 	UPROPERTY(meta = (BindWidgetOptional))
 	TObjectPtr<UButton> Button_ClaimAll;
@@ -61,6 +69,10 @@ private:
 	/** WBP에 미리 배치해둔 보상 팝업 (기본 Collapsed) */
 	UPROPERTY(meta = (BindWidgetOptional))
 	TObjectPtr<UBARewardPopupWidget> RewardPopup;
+
+	/** 미수령/수령 탭 전환 라디오 */
+	UPROPERTY(meta = (BindWidgetOptional))
+	TObjectPtr<UBAUserWidgetRadio> MailTabRadio;
 
 	// ───── 에디터 설정 ─────
 

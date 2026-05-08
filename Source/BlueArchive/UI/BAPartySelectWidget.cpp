@@ -419,7 +419,7 @@ void UBAPartySelectWidget::RefreshPreviewSlot(int32 Index)
 	}
 	else
 	{
-		UE_LOG(LogBAPartyPr eview, Log, TEXT("RefreshPreviewSlot: ActivatePreview (Index=%d, Id=%s)"), Index, *Id.ToString());
+		UE_LOG(LogBAPartyPreview, Log, TEXT("RefreshPreviewSlot: ActivatePreview (Index=%d, Id=%s)"), Index, *Id.ToString());
 		if (ABAPlayerController* PC = Cast<ABAPlayerController>(GetOwningPlayer()))
 		{
 			PC->ActivatePreview(Id, Index, S.ColorRT, S.MaskRT);

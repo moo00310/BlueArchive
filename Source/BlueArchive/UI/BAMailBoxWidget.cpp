@@ -3,6 +3,7 @@
 #include "UI/BAMailBoxWidget.h"
 #include "UI/BAMailItemWidget.h"
 #include "UI/BARewardPopupWidget.h"
+#include "UI/BAUserWidgetRadio.h"
 #include "UI/ViewModel/BAMailViewModel.h"
 #include "SubSystem/BAMailSubsystem.h"
 #include "Components/ScrollBox.h"
@@ -29,6 +30,11 @@ void UBAMailBoxWidget::NativeConstruct()
 		MailViewModel->OnMailClaimed.AddDynamic(this, &UBAMailBoxWidget::OnMailClaimedHandler);
 	}
 
+	if (MailTabRadio)
+	{
+		MailTabRadio->OnSelectionChanged.AddDynamic(this, &UBAMailBoxWidget::OnMailTabChanged);
+	}
+
 	RefreshMailList();
 }
 
@@ -40,35 +46,54 @@ void UBAMailBoxWidget::NativeDestruct()
 		MailViewModel->OnMailClaimed.RemoveDynamic(this, &UBAMailBoxWidget::OnMailClaimedHandler);
 	}
 
+	if (MailTabRadio)
+	{
+		MailTabRadio->OnSelectionChanged.RemoveDynamic(this, &UBAMailBoxWidget::OnMailTabChanged);
+	}
+
 	Super::NativeDestruct();
 }
 
 void UBAMailBoxWidget::RefreshMailList()
 {
-	if (ScrollBox_Mails)
-	{
-		ScrollBox_Mails->ClearChildren();
-	}
-
 	if (!MailViewModel) return;
+
+	if (ScrollBox_Unclaimed) ScrollBox_Unclaimed->ClearChildren();
+	if (ScrollBox_Claimed)   ScrollBox_Claimed->ClearChildren();
 
 	for (const FBAMailItem& Mail : MailViewModel->GetMailList())
 	{
-		AddMailItemWidget(Mail);
+		UScrollBox* Target = Mail.bClaimed ? ScrollBox_Claimed : ScrollBox_Unclaimed;
+		AddMailItemWidget(Mail, Target);
 	}
 
+	ApplyTabVisibility(MailTabRadio ? MailTabRadio->GetSelectedIndex() : 0);
 	UpdateUnreadBadge();
 }
 
-void UBAMailBoxWidget::AddMailItemWidget(const FBAMailItem& MailItem)
+void UBAMailBoxWidget::ApplyTabVisibility(int32 TabIndex)
 {
-	if (!ScrollBox_Mails || !MailItemWidgetClass) return;
+	const ESlateVisibility ShowUnclaimed = (TabIndex == 0) ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed;
+	const ESlateVisibility ShowClaimed   = (TabIndex == 1) ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed;
+
+	if (ScrollBox_Unclaimed) ScrollBox_Unclaimed->SetVisibility(ShowUnclaimed);
+	if (ScrollBox_Claimed)   ScrollBox_Claimed->SetVisibility(ShowClaimed);
+}
+
+void UBAMailBoxWidget::OnMailTabChanged(int32 NewIndex)
+{
+	ApplyTabVisibility(NewIndex);
+}
+
+void UBAMailBoxWidget::AddMailItemWidget(const FBAMailItem& MailItem, UScrollBox* TargetScrollBox)
+{
+	if (!TargetScrollBox || !MailItemWidgetClass) return;
 
 	UBAMailItemWidget* ItemWidget = CreateWidget<UBAMailItemWidget>(this, MailItemWidgetClass);
 	if (!ItemWidget) return;
 
 	ItemWidget->InitFromMailItem(MailItem, MailViewModel);
-	ScrollBox_Mails->AddChild(ItemWidget);
+	TargetScrollBox->AddChild(ItemWidget);
 }
 
 void UBAMailBoxWidget::OnMailListChangedHandler()
@@ -78,7 +103,7 @@ void UBAMailBoxWidget::OnMailListChangedHandler()
 
 void UBAMailBoxWidget::OnMailClaimedHandler(FGuid MailId, TArray<FBAMailReward> Rewards)
 {
-	UpdateUnreadBadge();
+	RefreshMailList();
 
 	if (RewardPopup)
 	{
