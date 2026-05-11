@@ -85,26 +85,20 @@ void UBAHoverButton::HandleButtonClicked()
 
 void UBAHoverButton::HandleButtonHovered()
 {
-	if (HoverOutAnim)
+	if (bHoverEnabled)
 	{
-		StopAnimation(HoverOutAnim);
-	}
-	if (HoverInAnim)
-	{
-		PlayAnimation(HoverInAnim);
+		if (HoverOutAnim) StopAnimation(HoverOutAnim);
+		if (HoverInAnim)  PlayAnimation(HoverInAnim);
 	}
 	OnHovered.Broadcast();
 }
 
 void UBAHoverButton::HandleButtonUnhovered()
 {
-	if (HoverInAnim)
+	if (bHoverEnabled)
 	{
-		StopAnimation(HoverInAnim);
-	}
-	if (HoverOutAnim)
-	{
-		PlayAnimation(HoverOutAnim);
+		if (HoverInAnim)  StopAnimation(HoverInAnim);
+		if (HoverOutAnim) PlayAnimation(HoverOutAnim);
 	}
 	OnUnhovered.Broadcast();
 }
