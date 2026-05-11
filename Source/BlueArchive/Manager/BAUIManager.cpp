@@ -48,6 +48,15 @@ void UBAUIManager::ShowScreen_TSubclassOf(EUIScreen ScreenType)
 
 void UBAUIManager::ShowScreen(EUIScreen ScreenType)
 {
+	// BeginPlay 이전에 호출된 경우 (리슨 서버 호스트의 PostLogin 타이밍)
+	// 다음 틱으로 지연해 위젯 초기화 완료 후 실행
+	if (!MainAnimWidget || !BlackWidget)
+	{
+		GetOwner()->GetWorldTimerManager().SetTimerForNextTick(
+			FTimerDelegate::CreateUObject(this, &UBAUIManager::ShowScreen, ScreenType));
+		return;
+	}
+
 	if (bIsTransitioning)
 		return;
 

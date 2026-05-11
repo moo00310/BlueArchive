@@ -3,6 +3,19 @@
 #include "SubSystem/BAMailSubsystem.h"
 #include "SubSystem/BAResourceSubsystem.h"
 #include "Player/BAPlayerController.h"
+#include "UI/ViewModel/BAMailViewModel.h"
+
+bool UBAMailSubsystem::ShouldCreateSubsystem(UObject* Outer) const
+{
+	return Super::ShouldCreateSubsystem(Outer) && !IsRunningDedicatedServer();
+}
+
+void UBAMailSubsystem::Initialize(FSubsystemCollectionBase& Collection)
+{
+	Super::Initialize(Collection);
+	MailViewModel = NewObject<UBAMailViewModel>(this);
+	MailViewModel->Init(this);
+}
 
 // ───── 내부 헬퍼 ─────
 
@@ -24,11 +37,17 @@ void UBAMailSubsystem::OnMailReceived(const FBAMailItem& MailItem)
 	if (FindMailById(MailItem.MailId)) return;
 
 	MailBox.Add(MailItem);
+	FBAMailItem& Added = MailBox.Last();
 
 	UE_LOG(LogTemp, Log, TEXT("[MailSubsystem] Mail received - Id: %s, Title: %s"),
-		*MailItem.MailId.ToString(), *MailItem.Title);
+		*Added.MailId.ToString(), *Added.Title);
 
-	OnNewMailReceived.Broadcast(MailItem);
+	OnNewMailReceived.Broadcast(Added);
+
+	if (MailViewModel)
+	{
+		MailViewModel->NotifyMailReceived(Added);
+	}
 }
 
 void UBAMailSubsystem::ApplyRewardsLocally(FGuid MailId, const TArray<FBAMailReward>& Rewards)
@@ -37,6 +56,7 @@ void UBAMailSubsystem::ApplyRewardsLocally(FGuid MailId, const TArray<FBAMailRew
 	if (!Found || Found->bClaimed) return;
 
 	Found->bClaimed = true;
+	Found->ClaimedAt = FDateTime::UtcNow();
 
 	if (UBAResourceSubsystem* ResSub = GetGameInstance()->GetSubsystem<UBAResourceSubsystem>())
 	{
@@ -50,6 +70,11 @@ void UBAMailSubsystem::ApplyRewardsLocally(FGuid MailId, const TArray<FBAMailRew
 	}
 
 	OnMailClaimed.Broadcast(MailId);
+
+	if (MailViewModel)
+	{
+		MailViewModel->NotifyMailClaimed(MailId, Rewards);
+	}
 }
 
 // ───── UI에서 호출 ─────

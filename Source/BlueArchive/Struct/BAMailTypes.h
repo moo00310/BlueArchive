@@ -45,6 +45,14 @@ struct FBAMailItem
 	UPROPERTY(BlueprintReadWrite)
 	bool bClaimed = false;
 
+	/** 수신 일시 (UTC). 클라이언트가 메일을 받은 시각. */
+	UPROPERTY(BlueprintReadWrite)
+	FDateTime ReceivedAt;
+
+	/** 수령 일시 (UTC). 미수령 시 기본값(0). */
+	UPROPERTY(BlueprintReadWrite)
+	FDateTime ClaimedAt;
+
 	/** 메일 만료 일시 (UTC). 서버가 RegisterMail 시 설정. */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere)
 	FDateTime ExpiresAt;

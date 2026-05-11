@@ -25,8 +25,8 @@ public:
 	static constexpr int32 MaxPartyPresets = 4;
 	static constexpr int32 MaxMembersPerParty = 3;
 
-	UFUNCTION(BlueprintCallable, Category = "Party")
-	FString GetPlayerUID();
+	/** 로그인 완료 후 호출 — 닉네임별 로컬 슬롯을 로드/생성 */
+	void LoadForNickname(const FString& Nickname);
 
 	UFUNCTION(BlueprintCallable, Category = "Party")
 	TArray<FName> GetPartyPreset(int32 PresetIndex);
@@ -45,5 +45,4 @@ private:
 	FString CachedSlotName;
 
 	void EnsureLoaded();
-	FString ResolveSlotName() const;
 };

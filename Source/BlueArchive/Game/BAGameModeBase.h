@@ -20,11 +20,13 @@ class BLUEARCHIVE_API ABAGameModeBase : public AGameModeBase
 public:
 	ABAGameModeBase();
 
+	virtual void InitGame(const FString& MapName, const FString& Options, FString& ErrorMessage) override;
 	virtual void BeginPlay() override;
 	virtual void PostLogin(APlayerController* NewPlayer) override;
 	virtual void Logout(AController* Exiting) override;
 
-	void RegisterPlayerUID(ABAPlayerController* PC, const FString& UID);
+	void RegisterNicknameForPlayer(ABAPlayerController* PC, const FString& Nickname);
+	void RegisterPlayerUID(ABAPlayerController* PC, const FString& UID, const FString& Nickname);
 	ABAPlayerController* FindControllerByUID(const FString& UID) const;
 
 	// ───── 메일 배포 ─────
@@ -49,6 +51,7 @@ protected:
 	TArray<FBAMailItem> ActiveMailList;
 
 	TMap<FGuid, TSet<FString>> ClaimedMap;
+	TMap<FGuid, TMap<FString, int64>> ClaimedTimeMap;  // MailId → UID → FDateTime ticks
 	TMap<TObjectPtr<ABAPlayerController>, TArray<FGuid>> PendingClaims;
 
 	/** 전체 플레이어 재화 데이터 (BA_ResourceSlot_Server.sav) */
@@ -58,6 +61,10 @@ protected:
 	/** 전체 플레이어 캐릭터 데이터 (BA_CharacterSlot_Server.sav) */
 	UPROPERTY()
 	TObjectPtr<UBACharacterServerSaveGame> CharacterServerSave;
+
+	/** 메일 수령 이력 (BA_MailSlot_Server.sav) */
+	UPROPERTY()
+	TObjectPtr<UBAMailServerSaveGame> MailServerSave;
 
 private:
 	void LoadServerSaves();
@@ -69,4 +76,5 @@ private:
 	void BroadcastMailToAll(const FBAMailItem& MailItem);
 	void SendMailToPlayer(ABAPlayerController* PC, const FBAMailItem& MailItem);
 	FString FindUIDByController(ABAPlayerController* PC) const;
+
 };

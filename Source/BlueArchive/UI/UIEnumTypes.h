@@ -12,6 +12,7 @@
 UENUM(BlueprintType)
 enum class EUIScreen : uint8
 {
+	LOGIN    UMETA(DisplayName = "Login"),
 	MAIN     UMETA(DisplayName = "Main"),
 	CONTENTS UMETA(DisplayName = "Contents"),
 	SELECT   UMETA(DisplayName = "Select"),

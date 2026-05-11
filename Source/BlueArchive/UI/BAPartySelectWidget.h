@@ -8,12 +8,12 @@
 
 class UPanelWidget;
 class UWidget;
-class UBACharacterDataSubsystem;
 class UBAUser_SDF_DecoWidget;
 class UBAUserWidgetRadio;
 class UBACharacterPortraitWidget;
 class UBAPreviewSlotInputWidget;
 class UBAPreviewSlotPanelWidget;
+class UBAPartyViewModel;
 class UImage;
 
 USTRUCT(BlueprintType)
@@ -35,21 +35,26 @@ public:
 	TObjectPtr<UMaterialInstanceDynamic> UIMID = nullptr;
 };
 
+/**
+ * 파티 편성 화면 위젯
+ * - Subsystem 직접 접근 없음 (BAPartyViewModel 경유)
+ * - 프리뷰 렌더(RenderTarget, PlayerController 호출)는 View 책임이므로 위젯에 유지
+ */
 UCLASS()
 class BLUEARCHIVE_API UBAPartySelectWidget : public UBAUserWidget
 {
 	GENERATED_BODY()
 
 public:
-	// --- 상수 ---
-	static constexpr int32 MaxPartyPresets = 4;
+	static constexpr int32 MaxPartyPresets    = 4;
 	static constexpr int32 MaxMembersPerParty = 3;
 
-	// --- Party API ---
 	UFUNCTION(BlueprintPure, Category = "Party")
 	static int32 GetMaxPartyPresets() { return MaxPartyPresets; }
 	UFUNCTION(BlueprintPure, Category = "Party")
 	static int32 GetMaxMembersPerParty() { return MaxMembersPerParty; }
+
+	// ─── Party API (내부적으로 ViewModel 위임) ───
 
 	UFUNCTION(BlueprintCallable, Category = "Party")
 	void LoadPartyFromSubsystem();
@@ -67,7 +72,15 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Party")
 	void RefreshPartySlots();
 
-	// --- Party|Window ---
+	// ─── 상태 접근자 ───
+
+	UFUNCTION(BlueprintPure, Category = "Party")
+	TArray<FName> GetDisplayPartyIds() const;
+	UFUNCTION(BlueprintPure, Category = "Party")
+	int32 GetCurrentPresetIndex() const;
+
+	// ─── Party|Window ───
+
 	UFUNCTION(BlueprintCallable, Category = "Party|Window")
 	void OpenSlotPopup();
 	UFUNCTION(BlueprintCallable, Category = "Party|Window")
@@ -81,11 +94,7 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Party|Window")
 	UUserWidget* GetCurrentWindow() const { return CurrentWindow; }
 
-	// --- public 멤버 변수 ---
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Party")
-	TArray<FName> DisplayPartyIds;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Party")
-	int32 CurrentPresetIndex = 0;
+	/** 팝업에서 선택 중인 슬롯 인덱스 (UI 상태 — ViewModel 불필요) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Party")
 	int32 SelectedSlotIndex = -1;
 
@@ -110,9 +119,16 @@ protected:
 	bool bSlotPopupOpen = false;
 
 private:
+	// ─── ViewModel 이벤트 핸들러 ───
+
+	UFUNCTION()
+	void OnPartyIdsChangedHandler();
+
+	// ─── 기존 UI 이벤트 핸들러 ───
+
 	UBAUser_SDF_DecoWidget* GetPartySlotForIndex(int32 Index) const;
 	void Make_RT(TObjectPtr<UTextureRenderTarget2D>& OutRT, const FLinearColor& Clear);
-	void InitPreviewSlot(int32 index);
+	void InitPreviewSlot(int32 Index);
 	void RefreshPreviewSlot(int32 Index);
 
 	UFUNCTION()
@@ -150,4 +166,7 @@ private:
 	TObjectPtr<UImage> IMG_Preview_1;
 	UPROPERTY(EditDefaultsOnly, Category = "Preview|UI")
 	TObjectPtr<UMaterialInterface> UI_PreviewMat;
+
+	UPROPERTY()
+	TObjectPtr<UBAPartyViewModel> PartyViewModel;
 };

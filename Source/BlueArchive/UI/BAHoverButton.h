@@ -33,6 +33,12 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Button")
 	void SetButtonBrush(const FSlateBrush& NewBrush);
 
+	UFUNCTION(BlueprintCallable, Category = "Button")
+	void SetHoverEnabled(bool bEnabled) { bHoverEnabled = bEnabled; }
+
+	UFUNCTION(BlueprintPure, Category = "Button")
+	bool IsHoverEnabled() const { return bHoverEnabled; }
+
 protected:
 	virtual void NativePreConstruct() override;
 	virtual void NativeConstruct() override;
@@ -61,4 +67,7 @@ private:
 	void HandleButtonUnhovered();
 
 	void ApplyBrushToButtonStyle(const FSlateBrush& Brush);
+
+	UPROPERTY(EditAnywhere, Category = "Button")
+	bool bHoverEnabled = true;
 };

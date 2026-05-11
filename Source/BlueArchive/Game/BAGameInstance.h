@@ -31,6 +31,13 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Audio|BGM")
 	void StopBGM(float FadeOutDuration = 0.0f);
 
+	// 사용자가 직접 Connect를 눌러 서버 접속을 시작했는지 여부
+	// true면 다음 BeginPlay에서 LOGIN 화면을 다시 열지 않음
+	bool bIsConnectingToServer = false;
+
+	// ConnectToServer에서 저장 → 두 번째 BeginPlay에서 ServerRegisterNickname RPC로 전달
+	FString PendingNickname;
+
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GameData")
 	TObjectPtr<UBAGameDataAsset> GameData;

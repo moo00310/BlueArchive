@@ -28,11 +28,15 @@ public:
 	ABAPlayerController();
 	virtual void BeginPlay() override;
 
-	// ───── UID 등록 RPC ─────
+	// ───── 로그인 ─────
 
-	/** 클라이언트 → 서버: 접속 시 PlayerUID를 서버에 등록 */
+	/** 로그인 UMG에서 호출: 닉네임과 서버 IP로 접속 */
+	UFUNCTION(BlueprintCallable, Category = "Login")
+	void ConnectToServer(const FString& Nickname, const FString& ServerIP);
+
+	/** 두 번째 BeginPlay에서 자동 호출: 닉네임을 서버에 RPC로 전달 */
 	UFUNCTION(Server, Reliable, WithValidation)
-	void ServerRegisterUID(const FString& UID);
+	void ServerRegisterNickname(const FString& Nickname);
 
 	// ───── 메일 RPC ─────
 
