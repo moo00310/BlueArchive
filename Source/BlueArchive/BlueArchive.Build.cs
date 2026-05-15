@@ -11,7 +11,7 @@ public class BlueArchive : ModuleRules
 		PublicIncludePaths.AddRange(new string[] { "BlueArchive" });
 
 
-        PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "EnhancedInput", "SlateCore", "Niagara", "NetCore", "UMG", "ModelViewViewModel" });
+        PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "EnhancedInput", "SlateCore", "NetCore", "UMG", "ModelViewViewModel" });
 
 		PrivateDependencyModuleNames.AddRange(new string[] {  });
 

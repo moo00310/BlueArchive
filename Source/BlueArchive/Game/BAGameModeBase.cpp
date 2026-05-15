@@ -27,7 +27,6 @@ void ABAGameModeBase::BeginPlay()
 {
 	Super::BeginPlay();
 
-#if WITH_EDITOR
 	if (ActiveMailList.IsEmpty())
 	{
 		FBAMailItem TestMail;
@@ -42,7 +41,6 @@ void ABAGameModeBase::BeginPlay()
 
 		RegisterMail(TestMail);
 	}
-#endif
 }
 
 void ABAGameModeBase::PostLogin(APlayerController* NewPlayer)
