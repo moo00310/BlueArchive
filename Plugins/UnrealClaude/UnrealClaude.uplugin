@@ -20,7 +20,7 @@
 	"Modules": [
 		{
 			"Name": "UnrealClaude",
-			"Type": "Editor",
+			"Type": "EditorNoCommandlet",
 			"LoadingPhase": "PostEngineInit",
 			"PlatformAllowList": [ "Win64", "Linux", "Mac" ]
 		}

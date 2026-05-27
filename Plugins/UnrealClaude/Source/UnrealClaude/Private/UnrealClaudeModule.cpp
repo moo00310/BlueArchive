@@ -156,11 +156,14 @@ void FUnrealClaudeModule::StartupModule()
 		UE_LOG(LogUnrealClaude, Warning, TEXT("Claude CLI not found. Please install with: npm install -g @anthropic-ai/claude-code"));
 	}
 
-	// Start MCP Server
-	StartMCPServer();
+	// Start MCP Server (커맨들릿 실행 중에는 시작하지 않음 - 쿠킹/패키징 중 포트 충돌 방지)
+	if (!IsRunningCommandlet())
+	{
+		StartMCPServer();
 
-	// Initialize project context (async, will gather in background)
-	FProjectContextManager::Get().RefreshContext();
+		// Initialize project context (async, will gather in background)
+		FProjectContextManager::Get().RefreshContext();
+	}
 
 	// Initialize script execution manager (creates script directories)
 	FScriptExecutionManager::Get();
