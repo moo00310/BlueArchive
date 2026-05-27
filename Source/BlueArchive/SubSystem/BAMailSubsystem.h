@@ -68,6 +68,9 @@ public:
 	/** 로컬 PlayerController 등록 (BeginPlay에서 호출) */
 	void SetLocalPlayerController(ABAPlayerController* PC);
 
+	/** 로그아웃·재접속 시 수신함 초기화 (다른 계정의 데이터가 잔류하지 않도록) */
+	void Reset();
+
 private:
 	FBAMailItem* FindMailById(FGuid MailId);
 	const FBAMailItem* FindMailById(FGuid MailId) const;

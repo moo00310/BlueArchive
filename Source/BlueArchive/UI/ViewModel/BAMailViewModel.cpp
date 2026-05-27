@@ -52,6 +52,13 @@ void UBAMailViewModel::NotifyMailClaimed(FGuid MailId, const TArray<FBAMailRewar
 	OnMailClaimed.Broadcast(MailId, Rewards);
 }
 
+void UBAMailViewModel::NotifyReset()
+{
+	MailList.Empty();
+	RecalcUnclaimedCount();
+	OnMailListChanged.Broadcast();
+}
+
 // ─── Private ───
 
 void UBAMailViewModel::RecalcUnclaimedCount()

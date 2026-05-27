@@ -1,6 +1,8 @@
 {
   "permissions": {
     "allow": [
+      "PowerShell(*)",
+      "Bash(*)",
       "PowerShell(& \"C:\\\\UE_5.7_Source\\\\Setup.bat\" 2>&1)",
       "PowerShell(& \"C:\\\\UE_5.7_Source\\\\GenerateProjectFiles.bat\" 2>&1)",
       "PowerShell(& \"C:\\\\UE_5.7_Source\\\\Engine\\\\Build\\\\BatchFiles\\\\Build.bat\" BlueArchiveServer Win64 Development \"e:\\\\Unreal_Project\\\\BlueArchive\\\\BlueArchive.uproject\" 2>&1)",
@@ -48,12 +50,19 @@
       "PowerShell(& \"C:\\\\UE_5.7_Source\\\\Engine\\\\Build\\\\BatchFiles\\\\Build.bat\" BlueArchiveServer Win64 Development \"e:\\\\Unreal_Project\\\\BlueArchive\\\\BlueArchive.uproject\" -waitmutex)",
       "PowerShell(& \"E:\\\\UE_5.7\\\\Engine\\\\Build\\\\BatchFiles\\\\Build.bat\" BlueArchive Win64 Development \"e:\\\\Unreal_Project\\\\BlueArchive\\\\BlueArchive.uproject\" -waitmutex)",
       "PowerShell(& \"E:\\\\UE_5.7\\\\Engine\\\\Build\\\\BatchFiles\\\\RunUAT.bat\" BuildCookRun -project=\"e:\\\\Unreal_Project\\\\BlueArchive\\\\BlueArchive.uproject\" -targetplatform=Win64 -target=BlueArchiveServer -configuration=Development -skipcook -stage -stagingdirectory=\"E:\\\\BlueArchiveServerBuild\" -notools)",
-      "PowerShell(& \"E:\\\\UE_5.7\\\\Engine\\\\Build\\\\BatchFiles\\\\RunUAT.bat\" BuildCookRun -project=\"e:\\\\Unreal_Project\\\\BlueArchive\\\\BlueArchive.uproject\" -targetplatform=Win64 -target=BlueArchive -configuration=Development -skipcook -stage -stagingdirectory=\"E:\\\\BlueArchiveClientBuild\" -notools)"
+      "PowerShell(& \"E:\\\\UE_5.7\\\\Engine\\\\Build\\\\BatchFiles\\\\RunUAT.bat\" BuildCookRun -project=\"e:\\\\Unreal_Project\\\\BlueArchive\\\\BlueArchive.uproject\" -targetplatform=Win64 -target=BlueArchive -configuration=Development -skipcook -stage -stagingdirectory=\"E:\\\\BlueArchiveClientBuild\" -notools)",
+      "PowerShell(& \"E:\\\\UE_5.7\\\\Engine\\\\Build\\\\BatchFiles\\\\RunUAT.bat\" BuildCookRun -project=\"e:\\\\Unreal_Project\\\\BlueArchive\\\\BlueArchive.uproject\" -targetplatform=Win64 -target=BlueArchive -configuration=Development -cook -stage -stagingdirectory=\"E:\\\\BlueArchiveClientBuild\" -notools)",
+      "PowerShell(& \"C:\\\\UE_5.7_Source\\\\Engine\\\\Build\\\\BatchFiles\\\\RunUAT.bat\" BuildCookRun -project=\"e:\\\\Unreal_Project\\\\BlueArchive\\\\BlueArchive.uproject\" -targetplatform=Win64 -target=BlueArchiveServer -skipcook -stage -pak -build -configuration=Development -serverconfig=Development -stagingdirectory=\"E:\\\\BlueArchiveServerBuild\")",
+      "PowerShell(Get-WmiObject -Class Win32_LogicalDisk | Select-Object DeviceID, @{N='Free\\(GB\\)';E={[math]::Round\\($_.FreeSpace/1GB,1\\)}}, @{N='Size\\(GB\\)';E={[math]::Round\\($_.Size/1GB,1\\)}})",
+      "PowerShell(& \"C:\\\\UE_5.7_Source\\\\Engine\\\\Build\\\\BatchFiles\\\\RunUAT.bat\" BuildCookRun -project=\"e:\\\\Unreal_Project\\\\BlueArchive\\\\BlueArchive.uproject\" -targetplatform=Win64 -target=BlueArchiveServer -skipcook -stage -pak -build -configuration=Development -serverconfig=Development -stagingdirectory=\"E:\\\\BlueArchiveServerBuild\" -NoUBA)",
+      "PowerShell(Get-Process | Where-Object { $_.Name -match \"UnrealBuildTool|UBT|dotnet\" } | ForEach-Object { Write-Host \"종료: $\\($_.Name\\) \\($\\($_.Id\\)\\)\"; Stop-Process -Id $_.Id -Force -Confirm:$false -ErrorAction SilentlyContinue }; Write-Host \"완료\")",
+      "Read(//c/UE_5.7_Source/Engine/**)"
     ],
     "additionalDirectories": [
       "E:\\BlueArchiveServerBuild\\WindowsServer",
       "E:\\BlueArchiveClientBuild\\Windows",
-      "E:\\"
+      "E:\\",
+      "C:\\UE_5.7_Source\\Engine\\Saved\\UnrealBuildTool"
     ]
   }
 }

@@ -27,19 +27,35 @@ void ABAGameModeBase::BeginPlay()
 {
 	Super::BeginPlay();
 
-	if (ActiveMailList.IsEmpty())
+	auto HasMail = [this](const FString& Title) -> bool
 	{
-		FBAMailItem TestMail;
-		TestMail.Title     = TEXT("테스트 메일");
-		TestMail.Body      = TEXT("점검 보상입니다.");
-		TestMail.ExpiresAt = FDateTime::UtcNow() + FTimespan::FromDays(30.0);
+		return ActiveMailList.ContainsByPredicate([&](const FBAMailItem& M){ return M.Title == Title; });
+	};
 
+	if (!HasMail(TEXT("크레딧 보상")))
+	{
+		FBAMailItem Credit_260515;
+		Credit_260515.Title     = TEXT("크레딧 보상");
+		Credit_260515.Body      = TEXT("1,000,000 크레딧");
+		Credit_260515.ExpiresAt = FDateTime::UtcNow() + FTimespan::FromDays(30.0);
 		FBAMailReward Reward;
 		Reward.ResourceType = EResourceType::Credit;
-		Reward.Amount       = 1000;
-		TestMail.Rewards.Add(Reward);
+		Reward.Amount       = 1000000;
+		Credit_260515.Rewards.Add(Reward);
+		RegisterMail(Credit_260515);
+	}
 
-		RegisterMail(TestMail);
+	if (!HasMail(TEXT("신규 접속 보상")))
+	{
+		FBAMailItem Gem_260515;
+		Gem_260515.Title     = TEXT("신규 접속 보상");
+		Gem_260515.Body      = TEXT("300 청휘석");
+		Gem_260515.ExpiresAt = FDateTime::UtcNow() + FTimespan::FromDays(7.0);
+		FBAMailReward Reward;
+		Reward.ResourceType = EResourceType::Gem;
+		Reward.Amount       = 300;
+		Gem_260515.Rewards.Add(Reward);
+		RegisterMail(Gem_260515);
 	}
 }
 

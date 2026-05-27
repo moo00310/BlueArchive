@@ -29,6 +29,18 @@ const FBAMailItem* UBAMailSubsystem::FindMailById(FGuid MailId) const
 	return MailBox.FindByPredicate([&](const FBAMailItem& M) { return M.MailId == MailId; });
 }
 
+// ───── 초기화 ─────
+
+void UBAMailSubsystem::Reset()
+{
+	MailBox.Empty();
+
+	if (MailViewModel)
+		MailViewModel->NotifyReset();
+
+	UE_LOG(LogTemp, Log, TEXT("[MailSubsystem] Reset - 수신함 초기화 완료"));
+}
+
 // ───── PlayerController RPC에서 호출 ─────
 
 void UBAMailSubsystem::OnMailReceived(const FBAMailItem& MailItem)

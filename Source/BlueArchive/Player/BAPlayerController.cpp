@@ -101,6 +101,30 @@ void ABAPlayerController::ConnectToServer(const FString& Nickname, const FString
 	ClientTravel(ServerIP, TRAVEL_Absolute);
 }
 
+void ABAPlayerController::Logout()
+{
+	if (UBAGameInstance* GI = Cast<UBAGameInstance>(GetGameInstance()))
+	{
+		GI->bIsConnectingToServer = false;
+		GI->PendingNickname.Empty();
+	}
+	ClientTravel(TEXT("/Game/Map1"), TRAVEL_Absolute);
+}
+
+void ABAPlayerController::RequestBackOrLogout()
+{
+	if (GetCurrentScreen() == EUIScreen::MAIN)
+		Logout();
+	else
+		RequestGoBack();
+}
+
+EUIScreen ABAPlayerController::GetCurrentScreen() const
+{
+	if (BAUIManager) return BAUIManager->GetCurrentScreen();
+	return EUIScreen::END;
+}
+
 bool ABAPlayerController::ServerRegisterNickname_Validate(const FString& Nickname)
 {
 	return !Nickname.IsEmpty() && Nickname.Len() <= 20;
@@ -226,6 +250,11 @@ void ABAPlayerController::ClientInitPlayerData_Implementation(const TArray<FBARe
 	if (!GI || !GI->bIsConnectingToServer)
 		return;
 
+	// 이전 계정의 메일 데이터가 잔류하지 않도록 수신함 초기화
+	// (GameInstance는 ClientTravel 후에도 살아있어 MailBox가 오염될 수 있음)
+	if (UBAMailSubsystem* MailSub = GetGameInstance()->GetSubsystem<UBAMailSubsystem>())
+		MailSub->Reset();
+
 	if (UBAResourceSubsystem* ResSub = GetGameInstance()->GetSubsystem<UBAResourceSubsystem>())
 		ResSub->InitializeFromServer(Resources, UserName, UserLevel);
 
@@ -248,14 +277,6 @@ void ABAPlayerController::OnUIScreenChanged(EUIScreen Prev, EUIScreen Next)
 		ReleasePreviewActor();
 	}
 
-	// MAIN 화면 진입 시 BGM 재생
-	if (Next == EUIScreen::MAIN)
-	{
-		if (UBAGameInstance* GI = Cast<UBAGameInstance>(GetGameInstance()))
-		{
-			GI->PlayMainLobbyBGM();
-		}
-	}
 }
 
 void ABAPlayerController::LoadPreviewAssetsAsync(int32 Index, FName Id, TFunction<void(USkeletalMesh* LoadedMesh, TSubclassOf<UAnimInstance>LoadedAnimBP)> OnLoaded)

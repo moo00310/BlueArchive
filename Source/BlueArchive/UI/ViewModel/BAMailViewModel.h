@@ -63,6 +63,9 @@ public:
 	void NotifyMailReceived(const FBAMailItem& MailItem);
 	void NotifyMailClaimed(FGuid MailId, const TArray<FBAMailReward>& Rewards);
 
+	/** 계정 전환 시 목록 전체 초기화 */
+	void NotifyReset();
+
 private:
 	void RecalcUnclaimedCount();
 
